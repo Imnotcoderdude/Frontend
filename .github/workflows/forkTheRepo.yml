@@ -6,24 +6,28 @@ on:
       - main
 
 jobs:
-  sync-repo:
+  sync:
+    name: Sync forked repo
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout organization repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
-          repository: eleven-Book-shelf/Frontend
           token: ${{ secrets.VERCEL_GITHUB_TOKEN }}
+          fetch-depth: 0
+          ref: main
 
-      - name: Push to personal repository
-        uses: cpina/github-action-push-to-another-repository@main
-        env:
-          API_TOKEN_GITHUB: ${{ secrets.VERCEL_GITHUB_TOKEN }}
-        with:
-          source-directory: '.'
-          destination-github-username: imnotcoderdude
-          destination-repository-name: Frontend
-          user-email: ${{ secrets.VERCEL_GITHUB_EMAIL }}
-          commit-message: 'Auto-sync from organization repo'
-          target-branch: main
+      - name: add remote-url
+        run: |
+          git remote add forked-repo https://imnotcoderdude:${{ secrets.VERCEL_GITHUB_TOKEN }}@github.com/imnotcoderdude/Frontend
+          git config user.name imnotcoderdude
+          git config user.email ${{ secrets.VERCEL_GITHUB_EMAIL }}
+
+      - name: push changes to forked-repo
+        run: |
+          git push -f forked-repo main
+
+      - name: Clean
+        run: |
+          git remote remove forked-repo
