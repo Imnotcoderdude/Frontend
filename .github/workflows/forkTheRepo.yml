@@ -1,0 +1,29 @@
+name: Sync Organization Repo to Forked Repo
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  sync-repo:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout organization repository
+        uses: actions/checkout@v3
+        with:
+          repository: eleven-Book-shelf/Frontend
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Push to personal repository
+        uses: cpina/github-action-push-to-another-repository@main
+        env:
+          API_TOKEN_GITHUB: ${{ secrets.VERCEL_GITHUB_TOKEN }}
+        with:
+          source-directory: '.'
+          destination-github-username: imnotcoderdude
+          destination-repository-name: Frontend
+          user-email: ${{ secrets.VERCEL_GITHUB_EMAIL }}
+          commit-message: 'Auto-sync from organization repo'
+          target-branch: main
