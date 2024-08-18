@@ -45,7 +45,6 @@ const TagSearch = () => {
     };
 
     const handleResultClick = (result) => {
-        console.log(result)
         if (result.platform) {
             navigate(`/content/${result.id}`);
         } else {

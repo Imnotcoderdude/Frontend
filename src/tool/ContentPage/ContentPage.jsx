@@ -52,7 +52,6 @@ const ContentPage = ({type, title, genres, tabs}) => {
             const content = response.data.map(content => ({
                 ...content,
             }));
-            console.log(response)
             setContents(prevContents => [...prevContents, ...content]);
             setHasMore(content.length > 0);
         } catch (error) {

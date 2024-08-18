@@ -75,7 +75,6 @@ const App = () => {
             const response = await axiosInstance.get('/api/user/hashtags', {
                 headers: {Authorization: `${localStorage.getItem('Authorization')}`}
             });
-            console.log(response.data)
 
             if (!response.data || response.data.length === 0) {
                 setShowTagsModal(true);
@@ -92,7 +91,6 @@ const App = () => {
     const fetchTopHashtags = async () => {
         try {
             const response = await axiosInstance.get('/api/hashtag/all');
-            console.log(response.data)
 
             return response.data;
         } catch (error) {

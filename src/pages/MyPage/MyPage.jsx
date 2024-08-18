@@ -66,7 +66,6 @@ const MyPage = ({ setIsLoggedIn, onLogout }) => {
                         headers: { Authorization: `${localStorage.getItem('Authorization')}` },
                         params: { limit: 10 }
                     });
-                    console.log(response)
                     return response.data;
                 } catch (error) {
                     console.error("해시태그 데이터를 불러오는 중 오류가 발생했습니다!", error);
@@ -146,7 +145,6 @@ const MyPage = ({ setIsLoggedIn, onLogout }) => {
 
     const handleTagClick = (tag) => {
         localStorage.setItem('selectedTag', tag);  // 선택된 태그를 로컬 스토리지에 저장
-        console.log(tag)
         navigate('/');  // '/' 경로로 리다이렉트
     };
 
