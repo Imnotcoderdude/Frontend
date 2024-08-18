@@ -1,13 +1,11 @@
-*, *::before, *::after {
-    box-sizing: border-box;
-}
-body {
+body, html {
     margin: 0;
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+    padding: 0;
+    font-family: 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
     background-color: #f0f2f5;
     color: #333;
-    line-height: 1.6;
 }
+
 .container {
     max-width: 800px;
     margin: 2rem auto;
@@ -16,91 +14,71 @@ body {
     border-radius: 8px;
     box-shadow: 0 2px 4px rgba(0,0,0,0.1);
 }
-.form-group {
+
+
+.formGroup {
     margin-bottom: 1.5rem;
+
 }
+
+.formGroup_bottom {
+    text-align: right;
+    margin-bottom: 1.5rem;
+
+}
+
 label {
     display: block;
     margin-bottom: 0.5rem;
     font-weight: 500;
 }
+
 input[type="text"],
-textarea,
-select {
+textarea {
     width: 100%;
-    padding: 0.5rem;
+    padding: 0.75rem;
     border: 1px solid #ccc;
     border-radius: 4px;
     font-size: 1rem;
 }
+
 textarea {
     min-height: 200px;
     resize: vertical;
 }
-.button {
-    display: inline-block;
-    padding: 0.5rem 1rem;
+
+.button_post {
+    text-align: right;
+    padding: 0.75rem 1.5rem;
     background-color: #4285f4;
     color: #fff;
-    text-decoration: none;
-    border-radius: 4px;
-    font-weight: 500;
-    transition: background-color 0.3s;
     border: none;
+    border-radius: 4px;
     cursor: pointer;
+    font-size: 1rem;
+    margin-right: 1rem;
+    margin-top: 3rem;
 }
-.button:hover {
-    background-color: #3b78e7;
+
+.button_post:hover {
+    background-color: #357ae8;
 }
-.button-secondary {
+
+.buttonSecondary {
     background-color: #f1f3f4;
     color: #333;
 }
-.button-secondary:hover {
-    background-color: #e8eaed;
+
+.buttonSecondary:hover {
+    background-color: #e2e6ea;
 }
 
-.selected-tag-container {
-    margin-top: 1rem;
+.quillEditor {
+    height: 300px;
+}
+.form-group {
     margin-bottom: 1.5rem;
-}
-
-.selected-tag {
-    display: inline-block;
-    margin: 0.2rem;
-    padding: 0.2rem 0.5rem;
-    background-color: #007BFF;
-    color: white;
-    border-radius: 5px;
-    cursor: pointer;
-}
-
-.selected-tag:hover {
-    background-color: #0056b3;
-}
-
-.tag-container {
     display: flex;
-    flex-wrap: wrap;
-    gap: 0.5rem;
-}
-
-.tag {
-    margin: 0.2rem;
-    padding: 0.2rem 0.5rem;
-    border: 1px solid #ccc;
-    border-radius: 5px;
-    background-color: #f1f1f1;
-    cursor: pointer;
-    transition: background-color 0.3s;
-}
-
-.tag:hover {
-    background-color: #ddd;
-}
-
-.tag-selected {
-    background-color: #007BFF;
-    color: white;
-    border: 1px solid #0056b3;
+    justify-content: flex-end; /* 우측 정렬 */
+    gap: 10px; /* 버튼 간격 조정 */
 }

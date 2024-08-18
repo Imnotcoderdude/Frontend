@@ -1,14 +1,23 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import axiosInstance from '../../api/axiosInstance';
-import styles from './NewPostPage.module.css';
+import styles from './NewPostReviewPage.module.css';
+import ReactQuill from "react-quill";
+
+const platformColors = {
+    '리디': '#03beea',
+    '문피아': '#034889',
+    '카카오페이지': '#FFCD00',
+    '네이버': '#00C73C'
+};
 
 const NewPostReviewPage = () => {
     const { contentId } = useParams();
     const navigate = useNavigate();
 
+    const [content, setContent] = useState(null);
     const [title, setTitle] = useState('');
-    const [content, setContent] = useState('');
+    const [contentText, setContentText] = useState('');
     const [rating, setRating] = useState(0);
     const [loading, setLoading] = useState(false);
     const [selectedTags, setSelectedTags] = useState([]);
@@ -20,14 +29,27 @@ const NewPostReviewPage = () => {
             setTimeout(() => {
                 const storedTags = localStorage.getItem('tags');
                 const genresArray = storedTags ? storedTags.split('#').filter(tag => tag !== "") : [];
-                console.log("Stored Tags:", storedTags);
-                console.log("Genres Array:", genresArray);
                 setGenres(genresArray);
             }, 400); // 0.4초 딜레이
         };
 
         fetchTagsWithDelay();
     }, []);
+
+    useEffect(() => {
+        const fetchContentDetail = async () => {
+            try {
+                const response = await axiosInstance.get(`/api/contents/${contentId}`, {
+                    headers: { Authorization: `${localStorage.getItem('Authorization')}` }
+                });
+                setContent(response.data);
+            } catch (error) {
+                console.error('Error fetching content detail:', error);
+            }
+        };
+
+        fetchContentDetail();
+    }, [contentId]);
 
     const handleTagClick = (tag) => {
         setSelectedTags(prevSelectedTags => {
@@ -50,15 +72,15 @@ const NewPostReviewPage = () => {
 
         const postData = {
             postType: 'REVIEW',
-            title,
-            body: content,
+            title: `[ 리뷰 ] ${content.title} :: ${title}`,
+            body: contentText,
             contentId,
-            prehashtag: selectedTags.join('#'),
+            prehashtag: '#' + selectedTags.join('#'),
             rating,
         };
 
         try {
-            const response = await axiosInstance.post(`/api/boards/2/post`, postData, {
+            const response = await axiosInstance.post(`/api/post`, postData, {
                 headers: {
                     Authorization: token,
                 }
@@ -76,105 +98,132 @@ const NewPostReviewPage = () => {
 
     const filteredGenres = genres.filter(tag => tag.toLowerCase().includes(searchTerm.toLowerCase()));
 
+    if (!content) {
+        return <div>Loading...</div>;
+    }
+
+    const platformColor = platformColors[content.platform] || '#ccc';
+
     return (
         <div className={styles.container}>
-            <h1>리뷰 작성</h1>
-            <form onSubmit={handleSubmit}>
-                <div className={styles['form-group']}>
-                    <label htmlFor="title">제목</label>
-                    <input
-                        type="text"
-                        id="title"
-                        name="title"
-                        value={title}
-                        onChange={(e) => setTitle(e.target.value)}
-                        required
-                    />
-                </div>
-                <div className={styles['form-group']}>
-                    <label htmlFor="rating">별점</label>
-                    <select
-                        id="rating"
-                        name="rating"
-                        value={rating}
-                        onChange={(e) => setRating(Number(e.target.value))}
-                        required
-                    >
-                        <option value="0">💢💔🥱</option>
-                        <option value="1">⭐</option>
-                        <option value="2">⭐⭐</option>
-                        <option value="3">⭐⭐⭐</option>
-                        <option value="4">⭐⭐⭐⭐</option>
-                        <option value="5">⭐⭐⭐⭐⭐</option>
-                    </select>
-                </div>
-
-                <div className={styles['form-group']}>
-                    <label htmlFor="tag-search">태그 검색</label>
-                    <input
-                        type="text"
-                        id="tag-search"
-                        name="tag-search"
-                        value={searchTerm}
-                        onChange={handleSearchChange}
-                    />
-                </div>
-                {selectedTags.length > 0 && (
-                    <div className={styles['selected-tag-container']}>
-                        <label>선택된 태그:</label>
-                        <div>
-                            {selectedTags.map(tag => (
-                                <span
-                                    key={tag}
-                                    className={styles['selected-tag']}
-                                    onClick={() => handleTagClick(tag)}
-                                >
-                                    {tag}
-                                </span>
-                            ))}
+            <div className={styles.leftColumn}>
+                <a href={content.url}>
+                    <div className={styles.content_img} style={{ backgroundImage: `url(${content.imgUrl})` }}>
+                        <div
+                            className={styles.post_platform}
+                            style={{ backgroundColor: platformColor }}
+                        >
+                            {content.platform}
                         </div>
                     </div>
-                )}
-                {searchTerm && filteredGenres.length > 0 && (
+                </a>
+                <div className={styles.bookInfo}>
+                    <h2>{content.title}</h2>
+                    <p>작가: {content.author}</p>
+                </div>
+            </div>
+
+            <div className={styles.rightColumn}>
+                <h1>리뷰 작성</h1>
+                <form onSubmit={handleSubmit}>
                     <div className={styles['form-group']}>
-                        <label>태그 선택</label>
-                        <div className={styles['tag-container']}>
-                            {filteredGenres.map(tag => (
-                                <button
-                                    key={tag}
-                                    type="button"
-                                    className={`${styles.tag} ${selectedTags.includes(tag) ? styles['tag-selected'] : ''}`}
-                                    onClick={() => handleTagClick(tag)}
-                                >
-                                    {tag}
-                                </button>
-                            ))}
-                        </div>
+                        <label htmlFor="title">제목</label>
+                        <input
+                            type="text"
+                            id="title"
+                            name="title"
+                            value={title}
+                            onChange={(e) =>  setTitle(e.target.value)}
+                            placeholder="제목을 입력해 주세요"
+                            required
+                        />
                     </div>
-                )}
+                    <div className={styles['form-group']}>
+                        <label htmlFor="rating">별점</label>
+                        <select
+                            id="rating"
+                            name="rating"
+                            value={rating}
+                            onChange={(e) => setRating(Number(e.target.value))}
+                            required
+                        >
+                            <option value="0">💢💔🥱</option>
+                            <option value="1">⭐</option>
+                            <option value="2">⭐⭐</option>
+                            <option value="3">⭐⭐⭐</option>
+                            <option value="4">⭐⭐⭐⭐</option>
+                            <option value="5">⭐⭐⭐⭐⭐</option>
+                        </select>
+                    </div>
 
-                <div className={styles['form-group']}>
-                    <label htmlFor="content">내용</label>
-                    <textarea
-                        id="content"
-                        name="content"
-                        value={content}
-                        onChange={(e) => setContent(e.target.value)}
-                        required
-                    ></textarea>
-                </div>
+                    <div className={styles['form-group']}>
+                        <label htmlFor="tag-search">태그 검색</label>
+                        <input
+                            type="text"
+                            id="tag-search"
+                            name="tag-search"
+                            value={searchTerm}
+                            onChange={handleSearchChange}
+                            placeholder="태그를 검색해 주세요"
+                        />
+                    </div>
+                    {selectedTags.length > 0 && (
+                        <div className={styles['selected-tag-container']}>
+                            <label>선택된 태그:</label>
+                            <div>
+                                {selectedTags.map(tag => (
+                                    <span
+                                        key={tag}
+                                        className={styles['selected-tag']}
+                                        onClick={() => handleTagClick(tag)}
+                                    >
+                                        {tag}
+                                    </span>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+                    {searchTerm && filteredGenres.length > 0 && (
+                        <div className={styles['form-group']}>
+                            <label>태그 선택</label>
+                            <div className={styles['tag-container']}>
+                                {filteredGenres.map(tag => (
+                                    <button
+                                        key={tag}
+                                        type="button"
+                                        className={`${styles.tag} ${selectedTags.includes(tag) ? styles['tag-selected'] : ''}`}
+                                        onClick={() => handleTagClick(tag)}
+                                    >
+                                        {tag}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+                    )}
 
-                <div className={styles['form-group']}>
-                    <button type="submit" className={styles.button} disabled={loading}>글 작성</button>
-                    <button
-                        type="button"
-                        className={`${styles.button} ${styles['button-secondary']}`}
-                        onClick={() => navigate(`/content/${contentId}`)}
-                    >
-                        취소
-                    </button>
-                </div>
-            </form>
+                    <div className={styles['form-group']}>
+                        <label htmlFor="content">내용</label>
+                        <ReactQuill
+                            value={contentText}
+                            onChange={setContentText}
+                            id="content"
+                            name="content"
+                            className={styles.quillEditor}
+                            required
+                        />
+                    </div>
+                    <div className={styles.foot_post}>
+                        <button type="submit" className={styles.button_post} disabled={loading}>글 작성</button>
+                        <button
+                            type="button"
+                            className={`${styles.button_post} ${styles['button-secondary']}`}
+                            onClick={() => navigate(`/community/board/1`)}
+                        >
+                            취소
+                        </button>
+                    </div>
+                </form>
+            </div>
         </div>
     );
 };

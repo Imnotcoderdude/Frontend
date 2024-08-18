@@ -1,50 +1,58 @@
-import React, { useEffect, useState, useCallback, useRef } from 'react';
+import React, {useCallback, useEffect, useRef, useState} from 'react';
 import Card from "../../tool/Card/Card";
 import axiosInstance from "../../api/axiosInstance";
 import './ContentPage.css';
 
-const ContentPage = ({ type, title, genres, tabs }) => {
+const ContentPage = ({type, title, genres, tabs}) => {
     const [contents, setContents] = useState([]);
     const [offset, setOffset] = useState(0);
-    const [pageSize, setPageSize] = useState(10);
+    const [pageSize] = useState(10);
     const [loading, setLoading] = useState(false);
     const [hasMore, setHasMore] = useState(true);
     const [selectedGenre, setSelectedGenre] = useState('전체');
     const [selectedSubGenre, setSelectedSubGenre] = useState('');
-    const [selectedTab, setSelectedTab] = useState(tabs[0]);
+    const [selectedTab, setSelectedTab] = useState('');
+    const [selectedEndOption, setSelectedEndOption] = useState('');
+    const [searchTerm, setSearchTerm] = useState('');
     const genreRefs = useRef([]);
     const [leftPosition, setLeftPosition] = useState(0);
-    const [maxWidth, setMaxWidth] = useState(window.innerWidth - 80);
     const containerRef = useRef(null);
     const subgenreRef = useRef(null);
     const isDown = useRef(false);
     const startX = useRef(0);
     const scrollLeft = useRef(0);
 
-    useEffect(() => {
-        setContents([]);
-        setOffset(0);
-        setHasMore(true);
-        fetchContent(0, pageSize, selectedGenre, selectedSubGenre, selectedTab);
-    }, [selectedGenre, selectedSubGenre, selectedTab]);
+    const endOptions = [
+        {name: '전체', value: ''},  // 전체 옵션 추가
+        {name: '완결', value: 'END'},
+        {name: '연재중', value: 'NOT'}
+    ];
 
     useEffect(() => {
-        if (offset !== 0) {
-            fetchContent(offset, pageSize, selectedGenre, selectedSubGenre, selectedTab);
+        if (offset === 0) {
+            setContents([]);
+            setHasMore(true);
         }
-    }, [offset]);
 
-    const fetchContent = async (offset, pageSize, genre, subGenre, tab) => {
+        fetchContent(offset, pageSize, selectedSubGenre, selectedTab, selectedEndOption);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [offset, pageSize, selectedSubGenre, selectedTab, selectedEndOption]);
+
+    const fetchContent = async (offset, pageSize, subGenre, tab, end) => {
         if (loading) return;
         setLoading(true);
         try {
+            const selectedTag = localStorage.getItem('selectedTag');
+            const genre = selectedTag || subGenre;
+
             const response = await axiosInstance.get(`/api/contents${type}`, {
-                headers: { Authorization: `${localStorage.getItem('Authorization')}` },
-                params: { offset, pagesize: pageSize, genre: subGenre || '', tab }
+                headers: {Authorization: `${localStorage.getItem('Authorization')}`},
+                params: {offset, pagesize: pageSize, genre: genre || '', platform: tab || '', end: end || ''}
             });
             const content = response.data.map(content => ({
                 ...content,
             }));
+            console.log(response)
             setContents(prevContents => [...prevContents, ...content]);
             setHasMore(content.length > 0);
         } catch (error) {
@@ -68,22 +76,19 @@ const ContentPage = ({ type, title, genres, tabs }) => {
     }, [handleScroll]);
 
     useEffect(() => {
-        const handleResize = () => {
-            setMaxWidth(window.innerWidth - 80);
-        };
-        window.addEventListener('resize', handleResize);
-        return () => {
-            window.removeEventListener('resize', handleResize);
-        };
+        const timer = setTimeout(() => {
+            localStorage.removeItem('selectedTag');
+        }, 1000);
+
+        return () => clearTimeout(timer);
     }, []);
 
     const handleGenreChange = (genre) => {
-        if (selectedGenre === genre) {
+        if (genre === '전체') {
             setSelectedGenre('전체');
             setSelectedSubGenre('');
         } else {
             setSelectedGenre(genre);
-            setSelectedSubGenre('');
         }
 
         const genreIndex = genres.findIndex(g => g.name === genre);
@@ -100,8 +105,27 @@ const ContentPage = ({ type, title, genres, tabs }) => {
     };
 
     const handleTabChange = (tab) => {
-        setSelectedTab(tab);
+        setSelectedTab(tab === selectedTab ? '' : tab);
     };
+
+    const handleSearchChange = (e) => {
+        const searchValue = e.target.value.toLowerCase();
+        setSearchTerm(searchValue);
+
+        if (searchValue != null) {
+            handleGenreChange('설정 및 태그');
+        }
+    };
+
+    const handleEndOptionChange = (endOption) => {
+        setSelectedEndOption(endOption);
+    };
+
+    const filteredSubGenres = selectedGenre !== '전체'
+        ? genres.find(genre => genre.name === selectedGenre)?.subGenres.filter(subGenre =>
+            subGenre.toLowerCase().includes(searchTerm)
+        )
+        : [];
 
     const handleMouseDown = (e) => {
         isDown.current = true;
@@ -124,7 +148,7 @@ const ContentPage = ({ type, title, genres, tabs }) => {
         if (!isDown.current) return;
         e.preventDefault();
         const x = e.pageX - subgenreRef.current.offsetLeft;
-        const walk = (x - startX.current) ; // Scroll speed
+        const walk = (x - startX.current); // Scroll speed
         subgenreRef.current.scrollLeft = scrollLeft.current - walk;
     };
 
@@ -134,15 +158,22 @@ const ContentPage = ({ type, title, genres, tabs }) => {
             <div className={`genre-filter ${selectedGenre !== '전체' ? 'active' : ''}`}>
                 {genres.map((genre, index) => (
                     <div key={genre.name} className="genre-section">
-                        <button ref={el => genreRefs.current[index] = el}
-                                className={`genre-button ${selectedGenre === genre.name ? 'active' : ''}`}
-                                onClick={() => handleGenreChange(genre.name)}
+                        <button
+                            ref={el => genreRefs.current[index] = el}
+                            className={`genre-button ${
+                                (selectedGenre === genre.name ||
+                                    (searchTerm && genre.name.toLowerCase().includes('설정 및 태그'.toLowerCase())))
+                                    ? 'active'
+                                    : ''
+                            }`}
+                            onClick={() => handleGenreChange(genre.name)}
                         >
                             {genre.name}
                         </button>
-                        {selectedGenre === genre.name && genre.subGenres.length > 0 && (
+
+                        {selectedGenre === genre.name && (filteredSubGenres.length > 0 || searchTerm) && (
                             <div
-                                style={{ transform: `translateX( -${leftPosition - 10}px)`}}
+                                style={{transform: `translateX(-${leftPosition - 10}px)`}}
                                 className="subgenre-filter"
                                 ref={subgenreRef}
                                 onMouseDown={handleMouseDown}
@@ -150,7 +181,7 @@ const ContentPage = ({ type, title, genres, tabs }) => {
                                 onMouseUp={handleMouseUp}
                                 onMouseMove={handleMouseMove}
                             >
-                                {genre.subGenres.map((subGenre) => (
+                                {filteredSubGenres.map((subGenre) => (
                                     <button
                                         key={subGenre}
                                         className={`subgenre-button ${selectedSubGenre === subGenre ? 'active' : ''}`}
@@ -163,7 +194,42 @@ const ContentPage = ({ type, title, genres, tabs }) => {
                         )}
                     </div>
                 ))}
+                <div className={`genre-filter ${selectedGenre !== '전체' ? 'active' : ''}`}>
+                    <div className="genre-section">
+                        <button
+                            className="genre-button"
+                            onClick={() => handleGenreChange('연재 상태')}
+                        >
+                            연재 상태
+                        </button>
+                        {selectedGenre === '연재 상태' && (
+                            <div
+                                className="subgenre-filter"
+                            >
+                                {endOptions.map((option) => (
+                                    <button
+                                        key={option.value}
+                                        className={`subgenre-button ${selectedEndOption === option.value ? 'active' : ''}`}
+                                        onClick={() => handleEndOptionChange(option.value)}
+                                    >
+                                        {option.name}
+                                    </button>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+                </div>
+                <div className="search-section">
+                    <input
+                        type="text"
+                        className="search-input"
+                        placeholder="태그 검색"
+                        value={searchTerm}
+                        onChange={handleSearchChange}
+                    />
+                </div>
             </div>
+
             <div className="ranking-tabs">
                 {tabs.map((tab) => (
                     <button

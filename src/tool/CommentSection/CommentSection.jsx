@@ -1,8 +1,10 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import axiosInstance from '../../api/axiosInstance';
 import './CommentSection.css';
+import { Link } from "react-router-dom";
+import ReportModal from '../../tool/ReportModal/ReportModal';
 
-const CommentSection = ({ postId, isLoggedIn }) => {
+const CommentSection = ({ postId, isLoggedIn, currentUserId }) => {
     const [comments, setComments] = useState([]);
     const [commentContent, setCommentContent] = useState('');
     const [replyContents, setReplyContents] = useState({});
@@ -10,12 +12,20 @@ const CommentSection = ({ postId, isLoggedIn }) => {
     const [loading, setLoading] = useState(true);
     const [editingCommentId, setEditingCommentId] = useState(null);
     const [editingContent, setEditingContent] = useState('');
-    const currentUserId = localStorage.getItem('userId');
+    const [totalPages, setTotalPages] = useState(1);
+    const [currentPage, setCurrentPage] = useState(1);
+    const [pageSize] = useState(3); // 댓글 페이지당 개수
+    const [reportModalVisible, setReportModalVisible] = useState(false);
+    const [reportedCommentId, setReportedCommentId] = useState(null); // 신고할 댓글 ID 저장
 
-    const fetchComments = async () => {
+    const fetchComments = useCallback(async (page = currentPage - 1) => {
+        if (page < 0) page = 0;
+
         try {
-            const response = await axiosInstance.get(`/api/post/${postId}/comments`);
-            const commentsData = await Promise.all(response.data.map(async (comment) => {
+            const response = await axiosInstance.get(`/api/post/${postId}/comments`, {
+                params: { page, pagesize: pageSize }
+            });
+            const commentsData = await Promise.all(response.data.responseDtoList.map(async (comment) => {
                 let likeResponse = { data: false };
                 if (isLoggedIn) {
                     likeResponse = await axiosInstance.get(`/api/post/${postId}/comments/${comment.id}/like`, {
@@ -46,17 +56,34 @@ const CommentSection = ({ postId, isLoggedIn }) => {
                 };
             }));
             setComments(commentsData);
+            setTotalPages(response.data.totalPages);
             setLoading(false);
         } catch (error) {
             console.error("댓글을 불러오는 중 오류가 발생했습니다!", error);
             setLoading(false);
         }
-    };
+    }, [postId, currentPage, pageSize, isLoggedIn]); // 의존성 배열에 필요한 값들 추가
 
     useEffect(() => {
-        fetchComments();
+        const loadLastPage = async () => {
+            const response = await axiosInstance.get(`/api/post/${postId}/comments`, {
+                params: { page: 0, pagesize: pageSize }
+            });
+            setTotalPages(response.data.totalPages);
+            setCurrentPage(response.data.totalPages);
+            fetchComments(response.data.totalPages - 1); // 마지막 페이지 댓글 불러오기
+        };
+
+        loadLastPage();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [postId, isLoggedIn]);
 
+    useEffect(() => {
+        fetchComments(currentPage - 1);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [currentPage]);
+
+    // 댓글 작성 처리 함수
     const handleCommentSubmit = async (e) => {
         e.preventDefault();
         try {
@@ -66,7 +93,8 @@ const CommentSection = ({ postId, isLoggedIn }) => {
             }, {
                 headers: { Authorization: `${localStorage.getItem('Authorization')}` }
             });
-            fetchComments();
+            setCurrentPage(totalPages); // 마지막 페이지로 이동
+            fetchComments(totalPages - 1);
             setCommentContent('');
         } catch (error) {
             console.error("댓글을 작성하는 중 오류가 발생했습니다!", error);
@@ -82,7 +110,7 @@ const CommentSection = ({ postId, isLoggedIn }) => {
             }, {
                 headers: { Authorization: `${localStorage.getItem('Authorization')}` }
             });
-            fetchComments();  // 대댓글 작성 후 댓글 목록 다시 불러오기
+            fetchComments(currentPage - 1);  // 현재 페이지에서 댓글 목록 다시 불러오기
             setReplyContents({ ...replyContents, [commentId]: '' });
             setActiveReplyId(null);
         } catch (error) {
@@ -101,11 +129,9 @@ const CommentSection = ({ postId, isLoggedIn }) => {
 
     const handleEditClick = (commentId, content) => {
         if (editingCommentId === commentId) {
-            // If already editing this comment, close edit mode
             setEditingCommentId(null);
             setEditingContent('');
         } else {
-            // Otherwise, open edit mode for this comment
             setEditingCommentId(commentId);
             setEditingContent(content);
         }
@@ -119,7 +145,7 @@ const CommentSection = ({ postId, isLoggedIn }) => {
             }, {
                 headers: { Authorization: `${localStorage.getItem('Authorization')}` }
             });
-            fetchComments();
+            fetchComments(currentPage - 1); // 현재 페이지에서 댓글 목록 다시 불러오기
             setEditingCommentId(null);
             setEditingContent('');
         } catch (error) {
@@ -132,7 +158,7 @@ const CommentSection = ({ postId, isLoggedIn }) => {
             await axiosInstance.delete(`/api/post/${postId}/comments/${commentId}`, {
                 headers: { Authorization: `${localStorage.getItem('Authorization')}` }
             });
-            fetchComments();
+            fetchComments(currentPage - 1); // 현재 페이지에서 댓글 목록 다시 불러오기
         } catch (error) {
             console.error("댓글을 삭제하는 중 오류가 발생했습니다!", error);
         }
@@ -149,10 +175,24 @@ const CommentSection = ({ postId, isLoggedIn }) => {
                     headers: { Authorization: `${localStorage.getItem('Authorization')}` }
                 });
             }
-            fetchComments();
+            fetchComments(currentPage - 1); // 현재 페이지에서 댓글 목록 다시 불러오기
         } catch (error) {
-            console.error("좋아요 처리 중 에러 발생:", error);
+            console.error("댓글 작성 중 오류가 발생했습니다!", error);
         }
+    };
+
+    const handlePageChange = (pageNumber) => {
+        setCurrentPage(pageNumber);
+    };
+
+    const openReportModal = (commentId) => {
+        setReportedCommentId(commentId);
+        setReportModalVisible(true);
+    };
+
+    const closeReportModal = () => {
+        setReportedCommentId(null);
+        setReportModalVisible(false);
     };
 
     const renderComments = (comments, parentCommentId = null) => {
@@ -160,7 +200,9 @@ const CommentSection = ({ postId, isLoggedIn }) => {
             const isCurrentUser = comment.userId === parseInt(currentUserId, 10);
             return (
                 <div className={`comment ${isCurrentUser ? 'current-user' : ''}`} key={comment.id}>
-                    <p className="comment-username">{comment.nickname}</p>
+                    <p className="comment-username">
+                        <Link to={`/user/${comment.userId}`}>{comment.nickname}</Link>
+                    </p>
                     {editingCommentId === comment.id ? (
                         <form className="update_comment" onSubmit={(e) => handleEditSubmit(e, comment.id)}>
                             <textarea
@@ -198,12 +240,20 @@ const CommentSection = ({ postId, isLoggedIn }) => {
                                     </button>
                                 </>
                             ) : (
-                                <button
-                                    className={`reply-button ${comment.likedByUser ? 'liked' : ''}`}
-                                    onClick={() => handleLike(comment.id, comment.likedByUser)}
-                                >
-                                    {comment.likedByUser ? '좋아요 취소' : '좋아요'}
-                                </button>
+                                <>
+                                    <button
+                                        className={`reply-button ${comment.likedByUser ? 'liked' : ''}`}
+                                        onClick={() => handleLike(comment.id, comment.likedByUser)}
+                                    >
+                                        {comment.likedByUser ? '좋아요 취소' : '좋아요'}
+                                    </button>
+                                    <button
+                                        className="reply-button"
+                                        onClick={() => openReportModal(comment.id)}
+                                    >
+                                        신고하기
+                                    </button>
+                                </>
                             )}
                         </div>
                     )}
@@ -236,7 +286,7 @@ const CommentSection = ({ postId, isLoggedIn }) => {
 
     return (
         <div className="comment-section">
-            <h3>댓글 ({comments.length})</h3>
+            <h3>댓글</h3>
             {renderComments(comments)}
             {isLoggedIn && (
                 <form className="comment-form" onSubmit={handleCommentSubmit}>
@@ -251,6 +301,23 @@ const CommentSection = ({ postId, isLoggedIn }) => {
                     <button type="submit" className="button left_button">댓글 작성</button>
                 </form>
             )}
+            <div className="pagination">
+                {Array.from({ length: totalPages }, (_, i) => (
+                    <button
+                        key={i + 1}
+                        onClick={() => handlePageChange(i + 1)}
+                        className={`page-button ${currentPage === i + 1 ? 'active' : ''}`}
+                    >
+                        {i + 1}
+                    </button>
+                ))}
+            </div>
+            <ReportModal
+                postId={postId}
+                commentId={reportedCommentId}
+                onClose={closeReportModal}
+                isVisible={reportModalVisible}
+            />
         </div>
     );
 };

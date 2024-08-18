@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import axiosInstance from '../../api/axiosInstance';
+import ReactQuill from 'react-quill';
+import 'react-quill/dist/quill.snow.css';
 import styles from './NewPostPage.module.css';
 
 const NewPostPage = () => {
@@ -8,7 +10,6 @@ const NewPostPage = () => {
     const navigate = useNavigate();
 
     const [title, setTitle] = useState('');
-    const [postType, setPostType] = useState('NORMAL');
     const [content, setContent] = useState('');
 
     const handleSubmit = async (event) => {
@@ -17,15 +18,15 @@ const NewPostPage = () => {
         const token = localStorage.getItem('Authorization');
 
         const postData = {
-            postType,
+            postType: "NORMAL",
             title,
             body: content,
             contentId: null,
-            rating: null,
+            rating: null
         };
 
         try {
-            const response = await axiosInstance.post(`/api/boards/${boardId}/post`, postData, {
+            const response = await axiosInstance.post(`/api/post`, postData, {
                 headers: {
                     Authorization: token,
                 }
@@ -42,7 +43,7 @@ const NewPostPage = () => {
         <div className={styles.container}>
             <h1>새 글 작성</h1>
             <form onSubmit={handleSubmit}>
-                <div className={styles['form-group']}>
+                <div className={styles.formGroup}>
                     <label htmlFor="title">제목</label>
                     <input
                         type="text"
@@ -53,32 +54,21 @@ const NewPostPage = () => {
                         required
                     />
                 </div>
-                <div className={styles['form-group']}>
-                    <label htmlFor="postType">카테고리</label>
-                    <select
-                        id="postType"
-                        name="postType"
-                        value={postType}
-                        onChange={(e) => setPostType(e.target.value)}
-                    >
-                        <option value="NORMAL">일반 토론</option>
-                    </select>
-                </div>
-                <div className={styles['form-group']}>
+                <div className={styles.formGroup}>
                     <label htmlFor="content">내용</label>
-                    <textarea
-                        id="content"
-                        name="content"
+                    <ReactQuill
                         value={content}
-                        onChange={(e) => setContent(e.target.value)}
-                        required
-                    ></textarea>
+                        onChange={setContent}
+                        modules={NewPostPage.modules}
+                        formats={NewPostPage.formats}
+                        className={styles.quillEditor}
+                    />
                 </div>
-                <div className={styles['form-group']}>
-                    <button type="submit" className={styles.button}>글 작성</button>
+                <div className={styles.formGroup_bottom}>
+                    <button type="submit" className={styles.button_post}>글 작성</button>
                     <button
                         type="button"
-                        className={`${styles.button} ${styles['button-secondary']}`}
+                        className={`${styles.button_post}`}
                         onClick={() => navigate(`/community/board/${boardId}`)}
                     >
                         취소

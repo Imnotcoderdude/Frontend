@@ -1,11 +1,10 @@
-import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import CommentSection from '../../tool/CommentSection/CommentSection';
+import React, { useEffect, useState } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
 import LikeBookmarkButtons from './LikeBookmarkButtons/LikeBookmarkButtons';
 import axiosInstance from '../../api/axiosInstance';
 import PostList from '../../tool/PostList/PostList';
-import Pagination from '../../tool/Pagination/Pagination';
 import styles from './ContentDetailPage.module.css';
+import Swiper from 'swiper';
 
 const platformColors = {
     '리디': '#03beea',
@@ -17,16 +16,20 @@ const platformColors = {
 const ContentDetailPage = ({ isLoggedIn }) => {
     const { cardId } = useParams();
     const navigate = useNavigate();
-    const [post, setPost] = useState(null);
+    const [content, setContent] = useState(null);
+    const [relatedPosts, setRelatedPosts] = useState([]);
+    const [contentPosts, setContentPosts] = useState([]); // 새로 추가된 상태
     const [page, setPage] = useState(1);
     const [totalPages, setTotalPages] = useState(1);
-    const itemsPerPage = 4; // 페이지당 아이템 수
+    const itemsPerPage = 4;
 
     useEffect(() => {
         const fetchContentDetail = async () => {
             try {
-                const response = await axiosInstance.get(`/api/contents/${cardId}`);
-                setPost(response.data);
+                const response = await axiosInstance.get(`/api/contents/${cardId}`, {
+                    headers: { Authorization: `${localStorage.getItem('Authorization')}` }
+                });
+                setContent(response.data);
                 setTotalPages(Math.ceil(response.data.posts.length / itemsPerPage));
                 await axiosInstance.post(`/api/contents/viewcount/${cardId}`);
             } catch (error) {
@@ -37,37 +40,100 @@ const ContentDetailPage = ({ isLoggedIn }) => {
         fetchContentDetail();
     }, [cardId]);
 
-    const handlePageClick = (page) => {
-        setPage(page);
+    useEffect(() => {
+        const fetchRelatedPosts = async () => {
+            try {
+                const response = await axiosInstance.get(`/api/post/list`, {
+                    params: {
+                        postType: 'REVIEW',
+                        page: page - 1,
+                        pagesize: itemsPerPage,
+                        asc: false
+                    }
+                });
+                setRelatedPosts(response.data.responseDtoList);
+                setTotalPages(response.data.totalPages);
+            } catch (error) {
+                console.error("There was an error fetching related posts!", error);
+            }
+        };
+
+        fetchRelatedPosts();
+    }, [page]);
+
+    // 새롭게 추가된 content 관련 post들을 불러오는 useEffect
+    useEffect(() => {
+        const fetchContentPosts = async () => {
+            try {
+                const response = await axiosInstance.get(`api/post/content`, {
+                    params: {
+                        content: cardId,
+                        offset: 0,
+                        pagesize: itemsPerPage
+                    }
+                });
+                setContentPosts(response.data);
+            } catch (error) {
+                console.error('Error fetching content-related posts:', error);
+            }
+        };
+
+        fetchContentPosts();
+    }, [cardId]);
+
+    useEffect(() => {
+        const swiperContainer = document.querySelector('.swiper-container');
+        if (swiperContainer) {
+            const swiperInstance = new Swiper(swiperContainer, {
+                slidesPerView: 3,
+                slidesPerGroup: 3,
+                loop: true,
+            });
+
+            const totalSlides = swiperInstance.slides.length;
+            const slidesPerView = swiperInstance.params.slidesPerView;
+            const slidesPerGroup = swiperInstance.params.slidesPerGroup;
+
+            if (totalSlides < slidesPerView || totalSlides < slidesPerGroup) {
+                swiperInstance.params.loop = false;
+                swiperInstance.update();
+            }
+        }
+    }, []);
+
+    const handlePageClick = (pageNumber) => {
+        setPage(pageNumber);
     };
 
-    if (!post) {
+    const handleTagClick = (tag) => {
+        localStorage.setItem('selectedTag', tag);
+        navigate('/');
+    };
+
+    if (!content) {
         return <div>Loading...</div>;
     }
 
-    const platformColor = platformColors[post.platform] || '#ccc';
-    const boardId = 2;
-
-    const paginatedPosts = post.posts.slice((page - 1) * itemsPerPage, page * itemsPerPage);
+    const platformColor = platformColors[content.platform] || '#ccc';
 
     return (
         <div className={styles.container}>
             <div className={styles.postDetail}>
                 <div className={styles.leftColumn}>
-                    <a href={post.url}>
-                        <div className={styles.content_img} style={{ backgroundImage: `url(${post.imgUrl})` }}>
+                    <a href={content.url}>
+                        <div className={styles.content_img} style={{ backgroundImage: `url(${content.imgUrl})` }}>
                             <div
                                 className={styles.post_platform}
                                 style={{ backgroundColor: platformColor }}
                             >
-                                {post.platform}
+                                {content.platform}
                             </div>
                         </div>
                     </a>
                     <div className={styles.bookInfo}>
-                        <h2>{post.title}</h2>
-                        <p>제작 작화: {post.author}</p>
-                        <a href={post.url}>
+                        <h2>{content.title}</h2>
+                        <p>작가: {content.author}</p>
+                        <a href={content.url}>
                             <div className={styles.detail_button}>
                                 보러가기
                             </div>
@@ -81,32 +147,61 @@ const ContentDetailPage = ({ isLoggedIn }) => {
                 </div>
                 <div className={styles.rightColumn}>
                     <div className={styles.topBox}>
-                        {isLoggedIn && <LikeBookmarkButtons postId={cardId}/>}
-                        <h2 className={styles.postDetailTitle}>{post.title}</h2>
-                        <p className={styles.postDetailMeta}>제작 작화: {post.author} | {post.date}</p>
+                        {isLoggedIn && <LikeBookmarkButtons postId={cardId} />}
+                        <h2 className={styles.postDetailTitle}>{content.title}</h2>
+                        {content.contentHashTag && (
+                            <div className={styles.tag_container}>
+                                {content.contentHashTag.split('#').filter(tag => tag.trim() !== '').map((tag, index) => (
+                                    <button
+                                        key={index}
+                                        className={styles.tag_button}
+                                        onClick={() => handleTagClick(tag)}
+                                    >
+                                        {tag}
+                                    </button>
+                                ))}
+                            </div>
+                        )}
+                        <p className={styles.postDetailMeta}>작가: {content.author} | {content.date}</p>
                         <div className={styles.tag_container}>
-                            {post.hashtags && post.hashtags.map(tag => (
-                                <button key={tag} className={styles.tag_button}>{tag}</button>
+                            {content.hashtags && content.hashtags.map(tag => (
+                                <button
+                                    key={tag}
+                                    className={styles.tag_button}
+                                    onClick={() => handleTagClick(tag)}
+                                >
+                                    {tag}
+                                </button>
                             ))}
                         </div>
                         <div className={styles.postDetailContent}>
-                            <p>{post.description}</p>
+                            <p>{content.description}</p>
                         </div>
-                    </div>
-                    <div className='commentSection'>
-                        <CommentSection postId={cardId} isLoggedIn={isLoggedIn}/>
                     </div>
                 </div>
             </div>
 
             <div className={styles.review_container}>
                 <div className="community-header review_head">
-                    <a href={`/community/board/2`}><h2 className="review_head" >리뷰 보드</h2></a>
+                    <a href={`/community/board/2`}><h2 className="review_head">리뷰 게시판</h2></a>
                 </div>
 
                 <PostList
-                    posts={paginatedPosts}
-                    boardId={boardId}
+                    posts={relatedPosts}
+                    boardId={2}
+                    currentPostId={null}
+                    currentPage={page}
+                    totalPages={totalPages}
+                    onPageClick={handlePageClick}
+                />
+            </div>
+
+            <div className={styles.review_container}>
+                <h2>해당 콘텐츠 리뷰</h2>
+                <PostList
+                    posts={contentPosts}
+                    boardId={2}
+                    currentPostId={null}
                     currentPage={page}
                     totalPages={totalPages}
                     onPageClick={handlePageClick}
