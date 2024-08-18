@@ -1,18 +1,20 @@
 import React, { useEffect, useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import {useNavigate, useParams} from 'react-router-dom';
 import axiosInstance from '../../api/axiosInstance';
 import styles from './ReportDetailPage.module.css';
 
-const ReportDetailPage = () => {
-    const { reportId } = useParams();
-    const navigate = useNavigate();
+const ReportDetailPage = ({ isLoggedIn, isSpecialBoard }) => {
+    const { postId } = useParams();
     const [report, setReport] = useState(null);
     const [loading, setLoading] = useState(true);
+
+    const navigate = useNavigate();
+
 
     useEffect(() => {
         const fetchReport = async () => {
             try {
-                const response = await axiosInstance.get(`/api/report/${reportId}`, {
+                const response = await axiosInstance.get(`/api/report/${postId}`, {
                     headers: { Authorization: localStorage.getItem('Authorization') }
                 });
                 setReport(response.data);
@@ -24,15 +26,15 @@ const ReportDetailPage = () => {
         };
 
         fetchReport();
-    }, [reportId]);
+    }, [postId]);
 
     const handleUpdateReport = async () => {
         try {
-            await axiosInstance.put(`/api/report/${reportId}`, {}, {
+            await axiosInstance.put(`/api/report/${postId}`, {}, {
                 headers: { Authorization: localStorage.getItem('Authorization') }
             });
-            alert('신고가 성공적으로 업데이트되었습니다.');
-            navigate('/admin/reports'); // Navigate back to the reports list
+            alert('신고가 성공적으로 보류되었습니다.');
+            navigate('/admin/main')
         } catch (error) {
             console.error('신고 업데이트 중 오류 발생:', error);
             alert('신고 업데이트 중 오류가 발생했습니다.');
@@ -42,11 +44,11 @@ const ReportDetailPage = () => {
     const handleDeleteReport = async () => {
         if (window.confirm('정말로 이 신고를 삭제하시겠습니까?')) {
             try {
-                await axiosInstance.delete(`/api/report/${reportId}`, {
+                await axiosInstance.delete(`/api/report/${postId}`, {
                     headers: { Authorization: localStorage.getItem('Authorization') }
                 });
-                alert('신고가 성공적으로 삭제되었습니다.');
-                navigate('/admin/reports'); // Navigate back to the reports list
+                alert('신고가 성공적으로 처리되었습니다.');
+                navigate('/admin/main')
             } catch (error) {
                 console.error('신고 삭제 중 오류 발생:', error);
                 alert('신고 삭제 중 오류가 발생했습니다.');
@@ -73,9 +75,8 @@ const ReportDetailPage = () => {
                 {report.commentId && <p><strong>관련 댓글 ID:</strong> {report.commentId}</p>}
             </div>
             <div className={styles.actions}>
-                <button onClick={handleUpdateReport} className={styles.updateBtn}>신고 업데이트</button>
-                <button onClick={handleDeleteReport} className={styles.deleteBtn}>신고 삭제</button>
-                <button onClick={() => navigate('/admin/reports')} className={styles.backBtn}>뒤로 가기</button>
+                <button onClick={handleUpdateReport} className={styles.updateBtn}>신고 보류</button>
+                <button onClick={handleDeleteReport} className={styles.deleteBtn}>신고 처리 완료</button>
             </div>
         </div>
     );

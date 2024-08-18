@@ -12,7 +12,7 @@ const ContentPage = ({type, title, genres, tabs}) => {
     const [selectedGenre, setSelectedGenre] = useState('전체');
     const [selectedSubGenre, setSelectedSubGenre] = useState('');
     const [selectedTab, setSelectedTab] = useState('');
-    const [selectedEndOption, setSelectedEndOption] = useState(''); // 전체가 기본값
+    const [selectedEndOption, setSelectedEndOption] = useState('');
     const [searchTerm, setSearchTerm] = useState('');
     const genreRefs = useRef([]);
     const [leftPosition, setLeftPosition] = useState(0);
@@ -35,6 +35,7 @@ const ContentPage = ({type, title, genres, tabs}) => {
         }
 
         fetchContent(offset, pageSize, selectedSubGenre, selectedTab, selectedEndOption);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [offset, pageSize, selectedSubGenre, selectedTab, selectedEndOption]);
 
     const fetchContent = async (offset, pageSize, subGenre, tab, end) => {

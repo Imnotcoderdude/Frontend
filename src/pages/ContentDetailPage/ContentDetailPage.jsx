@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import CommentSection from '../../tool/CommentSection/CommentSection';
 import LikeBookmarkButtons from './LikeBookmarkButtons/LikeBookmarkButtons';
 import axiosInstance from '../../api/axiosInstance';
 import PostList from '../../tool/PostList/PostList';
@@ -22,7 +21,6 @@ const ContentDetailPage = ({ isLoggedIn }) => {
     const [contentPosts, setContentPosts] = useState([]); // 새로 추가된 상태
     const [page, setPage] = useState(1);
     const [totalPages, setTotalPages] = useState(1);
-    const [currentUserId, setCurrentUserId] = useState(null);
     const itemsPerPage = 4;
 
     useEffect(() => {
@@ -41,23 +39,6 @@ const ContentDetailPage = ({ isLoggedIn }) => {
 
         fetchContentDetail();
     }, [cardId]);
-
-    useEffect(() => {
-        const fetchCurrentUser = async () => {
-            try {
-                const response = await axiosInstance.get('/api/user', {
-                    headers: { Authorization: `${localStorage.getItem('Authorization')}` }
-                });
-                setCurrentUserId(response.data.id);
-            } catch (error) {
-                console.error("사용자 정보를 가져오는 중 오류가 발생했습니다!", error);
-            }
-        };
-
-        if (isLoggedIn) {
-            fetchCurrentUser();
-        }
-    }, [isLoggedIn]);
 
     useEffect(() => {
         const fetchRelatedPosts = async () => {

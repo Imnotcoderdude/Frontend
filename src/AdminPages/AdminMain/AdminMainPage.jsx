@@ -1,6 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import Plot from 'react-plotly.js';
 import styles from './AdminMainPage.module.css';
 import axiosInstance from '../../api/axiosInstance';
 import NewNoticePage from '../AdminNewNoticePage/NewNoticePage';
@@ -11,20 +10,17 @@ const AdminMainPage = () => {
 
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [notices, setNotices] = useState([]);
-    const [map3D, setMap3D] = useState({});
     const [noticesPage, setNoticesPage] = useState(0);
     const [noticesTotalPages, setNoticesTotalPages] = useState(0);
     const [noticesSize] = useState(4);
-    const [hashtagsSize] = useState(100);
-    const [loading, setLoading] = useState(true);
     const [sortAscending, setSortAscending] = useState(true);
-    const boardId = 0;
+    const boardId = 3;
 
     const [reports, setReports] = useState([]);
     const [reportsPage, setReportsPage] = useState(0);
     const [reportsTotalPages, setReportsTotalPages] = useState(0);
     const [reportsSize] = useState(4);
-    const [reportSortBy, setReportSortBy] = useState('UNVERIFIED'); // Default sorting by 'UNVERIFIED'
+    const [reportSortBy, setReportSortBy] = useState('UNVERIFIED');
 
     const fetchNotices = useCallback(async () => {
         try {
@@ -45,32 +41,6 @@ const AdminMainPage = () => {
         }
     }, [noticesPage, noticesSize, sortAscending]);
 
-    const fetchHashtags = useCallback(async () => {
-        try {
-            const response = await axiosInstance.get('/api/admin/hashtag/page', {
-                params: { page: 0, size: hashtagsSize, sortBy: 'id', asc: false },
-                headers: { Authorization: `${localStorage.getItem('Authorization')}` },
-            });
-            const data = response.data;
-            let hashtagsData = [];
-
-            if (Array.isArray(data)) {
-                hashtagsData = data;
-            } else if (data && data.content) {
-                hashtagsData = data.content;
-            } else {
-                console.error('Unexpected response format:', data);
-            }
-
-            setMap3D(create3DMap(hashtagsData));
-            setLoading(false);
-        } catch (error) {
-            console.error('Failed to fetch hashtags:', error);
-            setLoading(false);
-        }
-    }, [hashtagsSize]);
-
-    // Fetch reports data
     const fetchReports = useCallback(async () => {
         try {
             const response = await axiosInstance.get(`/api/report`, {
@@ -91,19 +61,7 @@ const AdminMainPage = () => {
         }
     }, [reportsPage, reportsSize, reportSortBy, sortAscending]);
 
-    const create3DMap = (hashtags) => {
-        const tiers = [];
-        const tags = [];
-        const counts = [];
 
-        hashtags.forEach(({ tier, tag, count }) => {
-            tiers.push(tier);
-            tags.push(tag);
-            counts.push(count);
-        });
-
-        return { tiers, tags, counts };
-    };
 
     const handleCrawlingAction = async (endpoint) => {
         try {
@@ -127,21 +85,15 @@ const AdminMainPage = () => {
         fetchNotices();
     };
 
+
     useEffect(() => {
         fetchNotices();
     }, [fetchNotices]);
 
-    useEffect(() => {
-        fetchHashtags();
-    }, [fetchHashtags]);
 
     useEffect(() => {
         fetchReports();
     }, [fetchReports]);
-
-    if (loading) {
-        return <div>Loading...</div>;
-    }
 
     return (
         <div className={styles.container}>
@@ -257,6 +209,7 @@ const AdminMainPage = () => {
                         </div>
                     </div>
                 )}
+
             </div>
 
             <footer className={styles.footer}>

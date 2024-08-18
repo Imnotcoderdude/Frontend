@@ -37,7 +37,7 @@ const UserPage = () => {
             console.error('Failed to fetch recent posts:', error);
             setRecentPosts([]);
         }
-    }, [offset, pageSize]);
+    }, [userId,offset, pageSize]);
 
     useEffect(() => {
         fetchUserData();
