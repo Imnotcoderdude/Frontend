@@ -3,7 +3,7 @@ import axiosInstance from '../../api/axiosInstance';
 import PostList from '../../tool/PostList/PostList';
 import styles from './CommunityPage.module.css';
 
-const CommunityPage = () => {
+const CommunityPage = ({isLoggedIn}) => {
     const [reviewPosts, setReviewPosts] = useState([]);
     const [normalPosts, setNormalPosts] = useState([]);
     const [noticePosts, setNoticePosts] = useState([]);
@@ -56,7 +56,12 @@ const CommunityPage = () => {
             <div className={styles.boardItem}>
                 <div className={styles.Posts}>
                     <a href={'/community/board/2'}>
-                        <h2 className={styles.postT}>일반 게시글</h2></a>
+                        <h2 className={styles.postT}>일반 게시글
+                        </h2>
+                    </a>
+                    {isLoggedIn && (
+                        <a href={`/community/board/2/post/new`} className="button">새 일반 게시글 작성</a>
+                    )}
                     <PostList posts={normalPosts} boardId={2}/>
                 </div>
             </div>

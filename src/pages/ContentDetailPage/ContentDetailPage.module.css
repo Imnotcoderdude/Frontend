@@ -148,8 +148,8 @@
 
 .review_container{
     max-width: 1400px;
-    min-height: 450px;
-    margin: 2rem auto 10rem;
+    min-height: 150px;
+    margin: 2rem auto 1.8rem;
     padding: 0 1rem;
 }
 
@@ -231,7 +231,7 @@
 }
 
 .tag_button:hover {
-    background-color: #e8eaed;
+    background-color: #4ea9f3;
 }
 
 .tag_container {
@@ -251,6 +251,6 @@
 }
 
 .tag_button:hover {
-    background-color: #e8eaed;
+    background-color: #4ea9f3;
 }
 

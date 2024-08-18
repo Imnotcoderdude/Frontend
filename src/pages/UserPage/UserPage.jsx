@@ -1,160 +1,108 @@
-import React, {useCallback, useEffect, useState} from 'react';
-import Modal from 'react-modal';
-import styles from './MyPage.module.css';
+import React, { useCallback, useEffect, useState } from 'react';
+import styles from './UserPage.module.css';
 import axiosInstance from '../../api/axiosInstance';
-import CardGrid from './CardGrid';
-import ProfileHeader from './ProfileHeader';
 import PostList from '../../tool/PostList/PostList';
-import PostCard from "../../tool/PostCard/PostCard";
-import EditProfileModal from './EditProfileModal';
+import { useParams } from "react-router-dom";
 
-Modal.setAppElement('#root');
-
-const UserPage = ({ setIsLoggedIn }) => {
+const UserPage = () => {
     const [profile, setProfile] = useState(null);
-    const [bookmarkedWebtoons, setBookmarkedWebtoons] = useState([]);
-    const [bookmarkedWebnovels, setBookmarkedWebnovels] = useState([]);
+    const { userId } = useParams();
     const [recentPosts, setRecentPosts] = useState([]);
-    const [newUsername, setNewUsername] = useState('');
-    const [isModalOpen, setIsModalOpen] = useState(false);
-    const [isEditMode, setIsEditMode] = useState(false);
     const [totalPages, setTotalPages] = useState(1);
     const [currentPage, setCurrentPage] = useState(1);
 
     const pageSize = 4;
     const offset = (currentPage - 1) * pageSize;
 
-    const fetchData = useCallback(async () => {
+    const fetchUserData = useCallback(async () => {
         try {
-            const profileResponse = await axiosInstance.get('/api/user', {
-                headers: { Authorization: `${localStorage.getItem('Authorization')}` }
-            });
-            setProfile(profileResponse.data);
+            const response = await axiosInstance.get(`/api/user/${userId}`);
+            setProfile(response.data);
+        } catch (error) {
+            console.error('Failed to fetch user data:', error);
+        }
+    }, [userId]);
 
-            const fetchWebtoonsData = async () => {
-                try {
-                    const response = await axiosInstance.get(`/api/contents/webtoon/bookmark`, {
-                        headers: { Authorization: `${localStorage.getItem('Authorization')}` },
-                        params: { offset, pageSize }
-                    });
-                    return response.data;
-                } catch (error) {
-                    console.error("웹툰 데이터를 불러오는 중 오류가 발생했습니다!", error);
-                    return [];
-                }
-            };
-
-            const fetchWebnovelsData = async () => {
-                try {
-                    const response = await axiosInstance.get(`/api/contents/webnovel/bookmark`, {
-                        headers: { Authorization: `${localStorage.getItem('Authorization')}` },
-                        params: { offset, pageSize }
-                    });
-                    return response.data;
-                } catch (error) {
-                    console.error("웹소설 데이터를 불러오는 중 오류가 발생했습니다!", error);
-                    return [];
-                }
-            };
-
-            const webtoonsData = await fetchWebtoonsData();
-            const webnovelsData = await fetchWebnovelsData();
-
-            const postsResponse = await axiosInstance.get(`/api/boards/user/posts`, {
+    const fetchRecentPosts = useCallback(async () => {
+        try {
+            const postsResponse = await axiosInstance.get(`/api/user/posts/${userId}`, {
                 params: { offset, pageSize },
                 headers: { Authorization: `${localStorage.getItem('Authorization')}` }
             });
 
             setRecentPosts(Array.isArray(postsResponse.data.posts) ? postsResponse.data.posts : []);
-            setBookmarkedWebtoons(Array.isArray(webtoonsData) ? webtoonsData : []);
-            setBookmarkedWebnovels(Array.isArray(webnovelsData) ? webnovelsData : []);
             setTotalPages(postsResponse.data.totalPages);
 
         } catch (error) {
-            console.error('데이터 불러오기 실패:', error);
-            setBookmarkedWebtoons([]);
-            setBookmarkedWebnovels([]);
+            console.error('Failed to fetch recent posts:', error);
             setRecentPosts([]);
         }
-    }, [offset, pageSize]); // useCallback 의존성 배열에 필요한 값들 추가
+    }, [offset, pageSize]);
 
     useEffect(() => {
-        fetchData();
-    }, [currentPage, fetchData]); // fetchData를 의존성 배열에 추가
-
-    const handleEditProfile = async () => {
-        if (window.confirm('정말로 수정하시겠습니까?')) {
-            try {
-                await axiosInstance.put('/user/edit', null, {
-                    params: { username: newUsername },
-                    headers: { Authorization: `${localStorage.getItem('Authorization')}` }
-                });
-                // 프로필 수정 후 데이터 다시 가져오기
-                await fetchData();
-                setIsEditMode(false);
-                setNewUsername('');
-                setIsModalOpen(false); // 수정 후 모달 닫기
-            } catch (error) {
-                console.error('프로필 수정 실패:', error);
-            }
-        }
-    };
-
-    const handleDeleteAccount = async () => {
-        if (window.confirm('정말로 탈퇴하시겠습니까?')) {
-            try {
-                await axiosInstance.delete('/user/signout', {
-                    headers: { Authorization: `${localStorage.getItem('Authorization')}` }
-                });
-                // 탈퇴 후 로그아웃 및 리디렉션
-                localStorage.removeItem('Authorization');
-                localStorage.removeItem('userId');
-                setProfile(null);
-                setIsLoggedIn(false);
-                window.location.href = '/';
-            } catch (error) {
-                console.error('회원 탈퇴 실패:', error);
-            }
-        }
-    };
+        fetchUserData();
+        fetchRecentPosts();
+    }, [currentPage, fetchUserData, fetchRecentPosts]);
 
     const handlePageClick = (page) => {
         setCurrentPage(page);
     };
 
-    if (!profile) {
-        return <div>로딩 중...</div>;
-    }
+    const getStatusClass = (status) => {
+        switch (status) {
+            case 'NORMAL':
+                return styles.statusNormal;
+            case 'DELETED':
+                return styles.statusDeleted;
+            case 'BLOCKED':
+                return styles.statusBlocked;
+            default:
+                return '';
+        }
+    };
+
+    const getStatusText = (status) => {
+        switch (status) {
+            case 'NORMAL':
+                return '활동중';
+            case 'DELETED':
+                return '탈퇴함';
+            case 'BLOCKED':
+                return '차단됨';
+            default:
+                return '';
+        }
+    };
+
+    const getRoleClass = (role) => {
+        switch (role) {
+            case 'USER':
+                return styles.roleUser;
+            case 'ADMIN':
+                return styles.roleAdmin;
+            default:
+                return '';
+        }
+    };
 
     return (
         <div className={styles.container}>
-            <ProfileHeader
-                profile={profile}
-                setIsModalOpen={setIsModalOpen}
-                setIsEditMode={setIsEditMode}
-            />
-
-            <div className={styles.section}>
-                <h2 className={styles.sectionTitle}>
-                    북마크한 웹툰 <a href="/bookmarkedWebtoons" className={styles.more_btu}>더보기</a>
-                </h2>
-                <CardGrid items={bookmarkedWebtoons} />
-            </div>
-
-            <div className={styles.section}>
-                <h2 className={styles.sectionTitle}>
-                    북마크한 웹소설 <a href="/bookmarkedWebnovels" className={styles.more_btu}>더보기</a>
-                </h2>
-                <CardGrid items={bookmarkedWebnovels} />
-            </div>
-
-            <div className={styles.section}>
-                <h2>추천 리스트</h2>
-                <PostCard
-                    posts={recentPosts}
-                    currentPage={currentPage}
-                />
-            </div>
+            {profile && (
+                <div className={styles.profileHeader}>
+                    <h1>{profile.nickname}</h1>
+                    <div>
+                        <button className={`${styles.statusButton} ${getStatusClass(profile.status)}`}>
+                            <span>{getStatusText(profile.status)}</span>
+                        </button>
+                        {profile.role === 'ADMIN' && (
+                            <button className={`${styles.roleButton} ${getRoleClass(profile.role)}`}>
+                                <span>{profile.role}</span>
+                            </button>
+                        )}
+                    </div>
+                    <p>Member since: {new Date(profile.createdAt).toLocaleDateString()}</p>
+                </div>
+            )}
 
             <div className={styles.section}>
                 <h2>최근 작성한 게시글</h2>
@@ -165,17 +113,6 @@ const UserPage = ({ setIsLoggedIn }) => {
                     onPageClick={handlePageClick}
                 />
             </div>
-
-            <EditProfileModal
-                isOpen={isModalOpen}
-                isEditMode={isEditMode}
-                newUsername={newUsername}
-                setNewUsername={setNewUsername}
-                handleEditProfile={handleEditProfile}
-                handleDeleteAccount={handleDeleteAccount}
-                setIsEditMode={setIsEditMode}
-                setIsModalOpen={setIsModalOpen}
-            />
         </div>
     );
 };

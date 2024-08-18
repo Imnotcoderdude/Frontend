@@ -1,9 +1,9 @@
-import React, { useEffect, useState, useCallback, useRef } from 'react';
+import React, {useCallback, useEffect, useRef, useState} from 'react';
 import Card from "../../tool/Card/Card";
 import axiosInstance from "../../api/axiosInstance";
 import './ContentPage.css';
 
-const ContentPage = ({ type, title, genres, tabs }) => {
+const ContentPage = ({type, title, genres, tabs}) => {
     const [contents, setContents] = useState([]);
     const [offset, setOffset] = useState(0);
     const [pageSize] = useState(10);
@@ -12,6 +12,7 @@ const ContentPage = ({ type, title, genres, tabs }) => {
     const [selectedGenre, setSelectedGenre] = useState('전체');
     const [selectedSubGenre, setSelectedSubGenre] = useState('');
     const [selectedTab, setSelectedTab] = useState('');
+    const [selectedEndOption, setSelectedEndOption] = useState(''); // 전체가 기본값
     const [searchTerm, setSearchTerm] = useState('');
     const genreRefs = useRef([]);
     const [leftPosition, setLeftPosition] = useState(0);
@@ -21,31 +22,36 @@ const ContentPage = ({ type, title, genres, tabs }) => {
     const startX = useRef(0);
     const scrollLeft = useRef(0);
 
+    const endOptions = [
+        {name: '전체', value: ''},  // 전체 옵션 추가
+        {name: '완결', value: 'END'},
+        {name: '연재중', value: 'NOT'}
+    ];
+
     useEffect(() => {
         if (offset === 0) {
             setContents([]);
             setHasMore(true);
         }
 
-        fetchContent(offset, pageSize, selectedSubGenre, selectedTab);
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [offset, pageSize, selectedSubGenre, selectedTab]);
+        fetchContent(offset, pageSize, selectedSubGenre, selectedTab, selectedEndOption);
+    }, [offset, pageSize, selectedSubGenre, selectedTab, selectedEndOption]);
 
-    const fetchContent = async (offset, pageSize, subGenre, tab) => {
+    const fetchContent = async (offset, pageSize, subGenre, tab, end) => {
         if (loading) return;
         setLoading(true);
         try {
-            // 로컬 스토리지에서 selectedTag 값을 가져옴
             const selectedTag = localStorage.getItem('selectedTag');
-            const genre = selectedTag || subGenre; // selectedTag가 있으면 genre로 사용
+            const genre = selectedTag || subGenre;
 
             const response = await axiosInstance.get(`/api/contents${type}`, {
-                headers: { Authorization: `${localStorage.getItem('Authorization')}` },
-                params: { offset, pagesize: pageSize, genre: genre || '', platform: tab || '' }
+                headers: {Authorization: `${localStorage.getItem('Authorization')}`},
+                params: {offset, pagesize: pageSize, genre: genre || '', platform: tab || '', end: end || ''}
             });
             const content = response.data.map(content => ({
                 ...content,
             }));
+            console.log(response)
             setContents(prevContents => [...prevContents, ...content]);
             setHasMore(content.length > 0);
         } catch (error) {
@@ -71,9 +77,9 @@ const ContentPage = ({ type, title, genres, tabs }) => {
     useEffect(() => {
         const timer = setTimeout(() => {
             localStorage.removeItem('selectedTag');
-        }, 1000); // 1초 뒤에 selectedTag 값을 삭제
+        }, 1000);
 
-        return () => clearTimeout(timer); // 컴포넌트 언마운트 시 타이머 정리
+        return () => clearTimeout(timer);
     }, []);
 
     const handleGenreChange = (genre) => {
@@ -98,11 +104,7 @@ const ContentPage = ({ type, title, genres, tabs }) => {
     };
 
     const handleTabChange = (tab) => {
-        if (selectedTab === tab) {
-            setSelectedTab('');  // 이미 선택된 탭을 다시 누르면 해제
-        } else {
-            setSelectedTab(tab); // 새로 선택된 탭
-        }
+        setSelectedTab(tab === selectedTab ? '' : tab);
     };
 
     const handleSearchChange = (e) => {
@@ -110,8 +112,12 @@ const ContentPage = ({ type, title, genres, tabs }) => {
         setSearchTerm(searchValue);
 
         if (searchValue != null) {
-            handleGenreChange('설정 및 테그');
+            handleGenreChange('설정 및 태그');
         }
+    };
+
+    const handleEndOptionChange = (endOption) => {
+        setSelectedEndOption(endOption);
     };
 
     const filteredSubGenres = selectedGenre !== '전체'
@@ -166,7 +172,7 @@ const ContentPage = ({ type, title, genres, tabs }) => {
 
                         {selectedGenre === genre.name && (filteredSubGenres.length > 0 || searchTerm) && (
                             <div
-                                style={{ transform: `translateX(-${leftPosition - 10}px)` }}
+                                style={{transform: `translateX(-${leftPosition - 10}px)`}}
                                 className="subgenre-filter"
                                 ref={subgenreRef}
                                 onMouseDown={handleMouseDown}
@@ -187,6 +193,31 @@ const ContentPage = ({ type, title, genres, tabs }) => {
                         )}
                     </div>
                 ))}
+                <div className={`genre-filter ${selectedGenre !== '전체' ? 'active' : ''}`}>
+                    <div className="genre-section">
+                        <button
+                            className="genre-button"
+                            onClick={() => handleGenreChange('연재 상태')}
+                        >
+                            연재 상태
+                        </button>
+                        {selectedGenre === '연재 상태' && (
+                            <div
+                                className="subgenre-filter"
+                            >
+                                {endOptions.map((option) => (
+                                    <button
+                                        key={option.value}
+                                        className={`subgenre-button ${selectedEndOption === option.value ? 'active' : ''}`}
+                                        onClick={() => handleEndOptionChange(option.value)}
+                                    >
+                                        {option.name}
+                                    </button>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+                </div>
                 <div className="search-section">
                     <input
                         type="text"
@@ -197,6 +228,7 @@ const ContentPage = ({ type, title, genres, tabs }) => {
                     />
                 </div>
             </div>
+
             <div className="ranking-tabs">
                 {tabs.map((tab) => (
                     <button

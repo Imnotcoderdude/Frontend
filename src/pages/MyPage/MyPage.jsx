@@ -27,7 +27,6 @@ const MyPage = ({ setIsLoggedIn, onLogout }) => {
     const pageSize = 4;
     const offset = (currentPage - 1) * pageSize;
 
-    // fetchData를 useCallback으로 감싸서 메모이제이션합니다.
     const fetchData = useCallback(async () => {
         try {
             const profileResponse = await axiosInstance.get('/api/user', {
@@ -67,6 +66,7 @@ const MyPage = ({ setIsLoggedIn, onLogout }) => {
                         headers: { Authorization: `${localStorage.getItem('Authorization')}` },
                         params: { limit: 10 }
                     });
+                    console.log(response)
                     return response.data;
                 } catch (error) {
                     console.error("해시태그 데이터를 불러오는 중 오류가 발생했습니다!", error);
@@ -76,29 +76,31 @@ const MyPage = ({ setIsLoggedIn, onLogout }) => {
 
             const webtoonsData = await fetchWebtoonsData();
             const webnovelsData = await fetchWebnovelsData();
-            const hashtagsData = await fetchUserHashtags();  // 해시태그 데이터 가져오기
+            const hashtagsData = await fetchUserHashtags();
 
             const postsResponse = await axiosInstance.get(`/api/user/posts`, {
-                params: { offset, pageSize },
+                params: { page: currentPage - 1, pagesize: pageSize, asc: true },
                 headers: { Authorization: `${localStorage.getItem('Authorization')}` }
             });
 
-            setRecentPosts(Array.isArray(postsResponse.data.posts) ? postsResponse.data.posts : []);
+            const postsData = postsResponse.data.responseDtoList;
+
+            setRecentPosts(Array.isArray(postsData) ? postsData : []);
             setBookmarkedWebtoons(Array.isArray(webtoonsData) ? webtoonsData : []);
             setBookmarkedWebnovels(Array.isArray(webnovelsData) ? webnovelsData : []);
             setTotalPages(postsResponse.data.totalPages);
-            setHashtags(hashtagsData);  // 해시태그 상태 설정
+            setHashtags(hashtagsData);
         } catch (error) {
             console.error('데이터 불러오기 실패:', error);
             setBookmarkedWebtoons([]);
             setBookmarkedWebnovels([]);
             setRecentPosts([]);
         }
-    }, [offset, pageSize]); // useCallback에 필요한 의존성만 추가합니다.
+    }, [currentPage, offset, pageSize]);
 
     useEffect(() => {
         fetchData();
-    }, [currentPage, fetchData]); // 의존성 배열에서 fetchData를 안전하게 사용
+    }, [currentPage, fetchData]);
 
     const handleEditProfile = async () => {
         if (window.confirm('정말로 수정하시겠습니까?')) {
@@ -126,19 +128,32 @@ const MyPage = ({ setIsLoggedIn, onLogout }) => {
 
                 setProfile(null);
                 setIsLoggedIn(false);
+                navigate(`/`);
                 onLogout();
-                window.location.href = '/';
             } catch (error) {
                 console.error('회원 탈퇴 실패:', error);
             }
         }
     };
 
+    const HashtagBlock = ({ tag}) => {
+        return (
+            <div className={styles.hashtagBlock}  onClick={() => handleTagClick(tag)} >
+                <div className={styles.tag}>{tag}</div>
+            </div>
+        );
+    };
+
+    const handleTagClick = (tag) => {
+        localStorage.setItem('selectedTag', tag);  // 선택된 태그를 로컬 스토리지에 저장
+        console.log(tag)
+        navigate('/');  // '/' 경로로 리다이렉트
+    };
+
     const handlePageClick = (page) => {
         setCurrentPage(page);
     };
 
-    // 카드 클릭 시 해당 카드의 ID를 사용하여 페이지로 이동
     const handleCardClick = (id) => {
         navigate(`/content/${id}`);
     };
@@ -156,6 +171,19 @@ const MyPage = ({ setIsLoggedIn, onLogout }) => {
             />
 
             <div className={styles.section}>
+                <div className={styles.section}>
+                    <h2 className={styles.sectionTitle}>
+                        사용자의 해시태그
+                    </h2>
+                    <div className={styles.hashtagGrid}>
+                        {hashtags.map((hashtag) => (
+                            <HashtagBlock
+                                key={hashtag.id}
+                                tag={hashtag.tag}
+                            />
+                        ))}
+                    </div>
+                </div>
                 <h2 className={styles.sectionTitle}>
                     북마크한 웹툰 <a href="/bookmarkedWebtoons" className={styles.more_btu}>더보기</a>
                 </h2>
@@ -174,6 +202,7 @@ const MyPage = ({ setIsLoggedIn, onLogout }) => {
                         </div>
                     ))}
                 </div>
+
             </div>
 
             <div className={styles.section}>

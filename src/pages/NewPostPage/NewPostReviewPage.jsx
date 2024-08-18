@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import axiosInstance from '../../api/axiosInstance';
-import styles from './NewPostPage.module.css';
+import styles from './NewPostReviewPage.module.css';
+import ReactQuill from "react-quill";
 
 const platformColors = {
     '리디': '#03beea',
@@ -133,6 +134,7 @@ const NewPostReviewPage = () => {
                             name="title"
                             value={title}
                             onChange={(e) =>  setTitle(e.target.value)}
+                            placeholder="제목을 입력해 주세요"
                             required
                         />
                     </div>
@@ -162,6 +164,7 @@ const NewPostReviewPage = () => {
                             name="tag-search"
                             value={searchTerm}
                             onChange={handleSearchChange}
+                            placeholder="태그를 검색해 주세요"
                         />
                     </div>
                     {selectedTags.length > 0 && (
@@ -200,20 +203,20 @@ const NewPostReviewPage = () => {
 
                     <div className={styles['form-group']}>
                         <label htmlFor="content">내용</label>
-                        <textarea
+                        <ReactQuill
+                            value={contentText}
+                            onChange={setContentText}
                             id="content"
                             name="content"
-                            value={contentText}
-                            onChange={(e) => setContentText(e.target.value)}
+                            className={styles.quillEditor}
                             required
-                        ></textarea>
+                        />
                     </div>
-
-                    <div className={styles['form-group']}>
-                        <button type="submit" className={styles.button} disabled={loading}>글 작성</button>
+                    <div className={styles.foot_post}>
+                        <button type="submit" className={styles.button_post} disabled={loading}>글 작성</button>
                         <button
                             type="button"
-                            className={`${styles.button} ${styles['button-secondary']}`}
+                            className={`${styles.button_post} ${styles['button-secondary']}`}
                             onClick={() => navigate(`/community/board/1`)}
                         >
                             취소

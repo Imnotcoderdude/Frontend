@@ -38,6 +38,12 @@ import AdminPostManagementPage from "./AdminPages/AdminPostController/AdminPostM
 import AdminHashtagManagementPage from "./AdminPages/AdminHashtag/AdminHashtagManagementPage";
 import AdminRoute from "./api/AdminRoute";
 import AdminContentManagementPage from "./AdminPages/AdminContentsController/AdminContentManagementPage";
+import RecommendPage from "./pages/RecommendPage/RecommendPage";
+import PaymentReadyPage from "./pages/PaymentPage/PaymentReadyPage";
+import PaymentApprovePage from "./pages/PaymentPage/PaymentApprovePage";
+import PaymentFailPage from "./pages/PaymentPage/PaymentFailPage";
+import PaymentCancelPage from "./pages/PaymentPage/PaymentCancelPage";
+import ReportDetailPage from "./AdminPages/ReportDetailPage/ReportDetailPage";
 
 const App = () => {
     const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -141,6 +147,7 @@ const App = () => {
                 <Route path="/*" element={<NotFoundPage/>}/>
                 <Route path="/webtoon" element={<WebtoonPage/>}/>
                 <Route path="/webnovel" element={<WebnovelPage/>}/>
+                <Route path="/recommend" element={<RecommendPage/>}/>
                 <Route path="/content/:cardId" element={<ContentDetailPage isLoggedIn={isLoggedIn}/>}/>
 
                 <Route path="/signup" element={<SignupPage/>}/>
@@ -153,10 +160,9 @@ const App = () => {
                 <Route path="/bookmarkedWebtoons" element={<BookmarkedWebtoons/>}/>
                 <Route path="/bookmarkedWebnovels" element={<BookmarkedWebnovels/>}/>
 
-
-                <Route path="/community" element={<CommunityPage/>}/>
+                <Route path="/community" element={<CommunityPage isLoggedIn={isLoggedIn}/>}/>
                 <Route path="/community/board/:boardId/"
-                       element={<BoardPage isLoggedIn={isLoggedIn}/>}/> {/* isLoggedIn 전달 */}
+                       element={<BoardPage isLoggedIn={isLoggedIn}/>}/>
                 <Route path="/community/board/:boardId/post/:postId"
                        element={<PostDetailPage isLoggedIn={isLoggedIn}/>}/>
                 <Route path="/review/:contentId/new" element={<NewPostReviewPage/>}/>
@@ -169,6 +175,13 @@ const App = () => {
                 <Route path="/admin/post" element={<AdminRoute><AdminPostManagementPage/></AdminRoute>}/>
                 <Route path="/admin/hashtag" element={<AdminRoute><AdminHashtagManagementPage/></AdminRoute>}/>
                 <Route path="/admin/content" element={<AdminRoute><AdminContentManagementPage/></AdminRoute>}/>
+                <Route path="/admin/reports/:reportId" element={<ReportDetailPage />} />
+
+                <Route path="/payment/ready" component={PaymentReadyPage} />
+                <Route path="/payment/approve" component={PaymentApprovePage} />
+                <Route path="/payment/cancel" component={PaymentCancelPage} />
+                <Route path="/payment/fail" component={PaymentFailPage} />
+
             </Routes>
             {showTagsModal && <UserHashtag onSubmit={handleTagsSubmit} onClose={() => setShowTagsModal(false)}/>}
         </div>
