@@ -1,10 +1,11 @@
-import React, {useEffect, useState} from 'react';
-import {Link, useNavigate, useParams} from 'react-router-dom';
+import React, { useEffect, useState } from 'react';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 import axiosInstance from '../../api/axiosInstance';
 import CommentSection from '../../tool/CommentSection/CommentSection';
 import PostList from '../../tool/PostList/PostList';
 import './PostDetailPage.css';
 import styles from '../ContentDetailPage/ContentDetailPage.module.css';
+import ReportModal from '../../tool/ReportModal/ReportModal';
 
 const platformColors = {
     '리디': '#03beea',
@@ -13,8 +14,8 @@ const platformColors = {
     '네이버': '#00C73C'
 };
 
-const PostDetailPage = ({isLoggedIn}) => {
-    const {boardId, postId} = useParams();
+const PostDetailPage = ({ isLoggedIn }) => {
+    const { boardId, postId } = useParams();
     const [post, setPost] = useState(null);
     const [content, setContent] = useState(null);
     const [loading, setLoading] = useState(true);
@@ -27,9 +28,9 @@ const PostDetailPage = ({isLoggedIn}) => {
     const [totalPages, setTotalPages] = useState(1);
     const [currentPage, setCurrentPage] = useState(1);
     const [userProfile, setUserProfile] = useState(null);
+    const [reportModalVisible, setReportModalVisible] = useState(false);
     const navigate = useNavigate();
 
-    // Determine post type based on boardId
     const postType = boardId === '1' ? 'REVIEW' : 'NORMAL';
 
     useEffect(() => {
@@ -40,7 +41,7 @@ const PostDetailPage = ({isLoggedIn}) => {
                 setPost(postData);
                 setEditedTitle(postData.title);
                 setEditedContent(postData.body);
-                setContentId(postData.contentId); // contentId 설정
+                setContentId(postData.contentId);
                 setLoading(false);
             } catch (error) {
                 console.error("There was an error fetching the post!", error);
@@ -55,8 +56,8 @@ const PostDetailPage = ({isLoggedIn}) => {
         const fetchUserProfile = async () => {
             if (isLoggedIn) {
                 try {
-                    const response = await axiosInstance.get(`/api/user`, {
-                        headers: {Authorization: `${localStorage.getItem('Authorization')}`}
+                    const response = await axiosInstance.get('/api/user', {
+                        headers: { Authorization: `${localStorage.getItem('Authorization')}` }
                     });
                     setUserProfile(response.data); // 유저 프로필 상태 설정
                 } catch (error) {
@@ -72,7 +73,7 @@ const PostDetailPage = ({isLoggedIn}) => {
         const fetchLikeStatus = async () => {
             try {
                 const response = await axiosInstance.get(`/api/post/${postId}/like`, {
-                    headers: {Authorization: `${localStorage.getItem('Authorization')}`}
+                    headers: { Authorization: `${localStorage.getItem('Authorization')}` }
                 });
                 setLiked(response.data);
             } catch (error) {
@@ -105,7 +106,7 @@ const PostDetailPage = ({isLoggedIn}) => {
         const fetchRelatedPosts = async () => {
             try {
                 const response = await axiosInstance.get('/api/post/list', {
-                    params: {postType, page: currentPage - 1, pagesize: 5, asc: true}
+                    params: { postType, page: currentPage - 1, pagesize: 5, asc: true }
                 });
                 setRelatedPosts(response.data.responseDtoList);
                 setTotalPages(response.data.totalPages);
@@ -118,12 +119,12 @@ const PostDetailPage = ({isLoggedIn}) => {
     }, [boardId, currentPage, postType]);
 
     const handleLikeButtonClick = async () => {
-        const headers = {Authorization: `${localStorage.getItem('Authorization')}`};
+        const headers = { Authorization: `${localStorage.getItem('Authorization')}` };
         try {
             if (liked) {
-                await axiosInstance.delete(`/api/post/${postId}/like`, {headers});
+                await axiosInstance.delete(`/api/post/${postId}/like`, { headers });
             } else {
-                await axiosInstance.post(`/api/post/${postId}/like`, {}, {headers});
+                await axiosInstance.post(`/api/post/${postId}/like`, {}, { headers });
             }
             setLiked(!liked);
         } catch (error) {
@@ -132,10 +133,10 @@ const PostDetailPage = ({isLoggedIn}) => {
     };
 
     const handleDelete = async () => {
-        const headers = {Authorization: `${localStorage.getItem('Authorization')}`};
+        const headers = { Authorization: `${localStorage.getItem('Authorization')}` };
         try {
-            await axiosInstance.delete(`/api/post/${postId}`, {headers});
-            navigate(`/community/board/${boardId}`);
+            await axiosInstance.delete(`/api/post/${postId}`, { headers });
+            navigate('/');
         } catch (error) {
             console.error("There was an error deleting the post!", error);
         }
@@ -151,21 +152,48 @@ const PostDetailPage = ({isLoggedIn}) => {
             return;
         }
 
-        const headers = {Authorization: `${localStorage.getItem('Authorization')}`};
+        const headers = { Authorization: `${localStorage.getItem('Authorization')}` };
         try {
             await axiosInstance.put(`/api/post/${postId}`, {
                 title: editedTitle,
                 body: editedContent
-            }, {headers});
-            setPost({...post, title: editedTitle, body: editedContent});
+            }, { headers });
+            setPost({ ...post, title: editedTitle, body: editedContent });
             setEditMode(false);
         } catch (error) {
             console.error("There was an error saving the post!", error);
         }
     };
 
+    const handleTagClick = (tag) => {
+        localStorage.setItem('selectedTag', tag); // 선택된 태그를 로컬 스토리지에 저장
+        navigate('/'); // '/' 경로로 리다이렉트
+    };
+
+    const renderStars = (rating) => {
+        const fullStars = Math.floor(rating); // 가득 찬 별의 수
+        const halfStar = rating % 1 !== 0; // 반 별이 필요한지 여부
+        const emptyStars = 5 - fullStars - (halfStar ? 1 : 0); // 빈 별의 수
+
+        return (
+            <>
+                {Array(fullStars).fill('⭐').map((star, index) => (
+                    <span key={`full-${index}`}>{star}</span>
+                ))}
+                {halfStar && <span>⭐</span>}
+                {Array(emptyStars).fill('☆').map((star, index) => (
+                    <span key={`empty-${index}`}>{star}</span>
+                ))}
+            </>
+        );
+    };
+
     const handlePageClick = (pageNumber) => {
         setCurrentPage(pageNumber);
+    };
+
+    const closeModal = () => {
+        setReportModalVisible(false);
     };
 
     if (loading) {
@@ -183,22 +211,25 @@ const PostDetailPage = ({isLoggedIn}) => {
             <div className="back-button">
                 <a href={`/community/board/${boardId}`} className="post button"><h3>뒤로</h3></a>
             </div>
-            <div className={`post-detail-container ${post.postType === "REVIEW" ? "review" : ""}`}>
-                {post.postType === "REVIEW" && content && (
-                    <div className={styles.post_img} style={{backgroundImage: `url(${content.imgUrl})`}}>
+            <div className={`post-detail-container ${post.postType === 'REVIEW' ? 'review' : ''}`}>
+                {post.postType === 'REVIEW' && content && (
+                    <div className={styles.post_img} style={{ backgroundImage: `url(${content.imgUrl})` }}>
                         <div
                             className={styles.post_platform}
-                            style={{backgroundColor: platformColor}}
+                            style={{ backgroundColor: platformColor }}
                         >
                             {content.platform}
                         </div>
                     </div>
                 )}
                 <div className="post-detail">
-                    {post.postType === "REVIEW" && content && (
+                    {post.postType === 'REVIEW' && content && (
                         <div className="post-detail_2">
                             <div className={styles.button_container}>
                                 <h2 className={styles.contentDetailTitle}>{content.title}</h2>
+                                <h2 className={styles.contentDetailTitle}>
+                                    별점: {renderStars(post.rating)}
+                                </h2>
                                 <div className={styles.content_detail_buttons}>
                                     <a href={content.url}>
                                         <div className={styles.content_detail_button}>
@@ -215,11 +246,12 @@ const PostDetailPage = ({isLoggedIn}) => {
                             {content.contentHashTag && (
                                 <div className={styles.tag_container}>
                                     {content.contentHashTag.split('#').filter(tag => tag.trim() !== '').map((tag, index) => (
-                                        <button key={index} className={styles.tag_button}>{tag}</button>
+                                        <button onClick={() => handleTagClick(tag)}
+                                                key={index} className={styles.tag_button}>{tag}</button>
                                     ))}
                                 </div>
                             )}
-                            <p className={styles.contentDetailMeta}>작가: {content.author} </p>
+                            <p className={styles.contentDetailMeta}>작가: {content.author}</p>
                             <div className={styles.postDetailContent}>
                                 <p>{content.description}</p>
                             </div>
@@ -227,12 +259,20 @@ const PostDetailPage = ({isLoggedIn}) => {
                     )}
                     <div className="post-detail_3">
                         {isLoggedIn && userProfile && userProfile.id !== post.userId && (
-                            <button
-                                className={`post-like-button ${liked ? 'liked' : ''}`}
-                                onClick={handleLikeButtonClick}
-                            >
-                                {liked ? '좋아요 취소' : '좋아요'}
-                            </button>
+                            <div className="post-actions">
+                                <button
+                                    className={`post-like-button ${liked ? 'liked' : ''}`}
+                                    onClick={handleLikeButtonClick}
+                                >
+                                    {liked ? '좋아요 취소' : '좋아요'}
+                                </button>
+                                <button
+                                    className="post-like-button"
+                                    onClick={() => setReportModalVisible(true)}
+                                >
+                                    신고하기
+                                </button>
+                            </div>
                         )}
                         <div className="post-detail-header">
                             {editMode ? (
@@ -256,9 +296,12 @@ const PostDetailPage = ({isLoggedIn}) => {
                                     className="post-edit-textarea"
                                 />
                             ) : (
-                                <p>{post.body}</p>
+                                <div
+                                    dangerouslySetInnerHTML={{ __html: post.body }}
+                                />
                             )}
                         </div>
+
                         {isLoggedIn && userProfile && userProfile.id === post.userId && (
                             <div className="post-actions">
                                 {editMode ? (
@@ -274,7 +317,8 @@ const PostDetailPage = ({isLoggedIn}) => {
                     </div>
                 </div>
             </div>
-            <CommentSection postId={postId} isLoggedIn={isLoggedIn} currentUserId={userProfile ? userProfile.id : null} />
+            <CommentSection postId={postId} isLoggedIn={isLoggedIn}
+                            currentUserId={userProfile ? userProfile.id : null} />
             <div className="related-posts">
                 <h3>관련 포스트</h3>
                 <PostList
@@ -286,8 +330,14 @@ const PostDetailPage = ({isLoggedIn}) => {
                     onPageClick={handlePageClick}
                 />
             </div>
+            <ReportModal
+                postId={postId}
+                commentId={null}
+                onClose={closeModal}
+                isVisible={reportModalVisible}
+            />
         </div>
     );
-}
+};
 
 export default PostDetailPage;

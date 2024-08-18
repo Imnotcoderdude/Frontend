@@ -1,7 +1,8 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import axiosInstance from '../../api/axiosInstance';
 import './CommentSection.css';
 import { Link } from "react-router-dom";
+import ReportModal from '../../tool/ReportModal/ReportModal';
 
 const CommentSection = ({ postId, isLoggedIn, currentUserId }) => {
     const [comments, setComments] = useState([]);
@@ -14,8 +15,9 @@ const CommentSection = ({ postId, isLoggedIn, currentUserId }) => {
     const [totalPages, setTotalPages] = useState(1);
     const [currentPage, setCurrentPage] = useState(1);
     const [pageSize] = useState(3); // 댓글 페이지당 개수
+    const [reportModalVisible, setReportModalVisible] = useState(false);
+    const [reportedCommentId, setReportedCommentId] = useState(null); // 신고할 댓글 ID 저장
 
-    // useCallback으로 fetchComments 함수를 메모이제이션
     const fetchComments = useCallback(async (page = currentPage - 1) => {
         if (page < 0) page = 0;
 
@@ -177,9 +179,18 @@ const CommentSection = ({ postId, isLoggedIn, currentUserId }) => {
         }
     };
 
-    // 페이지 변경 처리 함수
     const handlePageChange = (pageNumber) => {
         setCurrentPage(pageNumber);
+    };
+
+    const openReportModal = (commentId) => {
+        setReportedCommentId(commentId);
+        setReportModalVisible(true);
+    };
+
+    const closeReportModal = () => {
+        setReportedCommentId(null);
+        setReportModalVisible(false);
     };
 
     const renderComments = (comments, parentCommentId = null) => {
@@ -227,12 +238,20 @@ const CommentSection = ({ postId, isLoggedIn, currentUserId }) => {
                                     </button>
                                 </>
                             ) : (
-                                <button
-                                    className={`reply-button ${comment.likedByUser ? 'liked' : ''}`}
-                                    onClick={() => handleLike(comment.id, comment.likedByUser)}
-                                >
-                                    {comment.likedByUser ? '좋아요 취소' : '좋아요'}
-                                </button>
+                                <>
+                                    <button
+                                        className={`reply-button ${comment.likedByUser ? 'liked' : ''}`}
+                                        onClick={() => handleLike(comment.id, comment.likedByUser)}
+                                    >
+                                        {comment.likedByUser ? '좋아요 취소' : '좋아요'}
+                                    </button>
+                                    <button
+                                        className="reply-button"
+                                        onClick={() => openReportModal(comment.id)}
+                                    >
+                                        신고하기
+                                    </button>
+                                </>
                             )}
                         </div>
                     )}
@@ -291,6 +310,12 @@ const CommentSection = ({ postId, isLoggedIn, currentUserId }) => {
                     </button>
                 ))}
             </div>
+            <ReportModal
+                postId={postId}
+                commentId={reportedCommentId}
+                onClose={closeReportModal}
+                isVisible={reportModalVisible}
+            />
         </div>
     );
 };

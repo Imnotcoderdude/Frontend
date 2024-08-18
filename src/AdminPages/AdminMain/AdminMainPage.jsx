@@ -1,10 +1,10 @@
-import React, {useCallback, useEffect, useState} from 'react';
-import {useNavigate} from 'react-router-dom';
+import React, { useCallback, useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import Plot from 'react-plotly.js';
 import styles from './AdminMainPage.module.css';
 import axiosInstance from '../../api/axiosInstance';
-import NewNoticePage from "../AdminNewNoticePage/NewNoticePage";
-import PostList from "../../tool/PostList/PostList";
+import NewNoticePage from '../AdminNewNoticePage/NewNoticePage';
+import PostList from '../../tool/PostList/PostList';
 
 const AdminMainPage = () => {
     const navigate = useNavigate();
@@ -20,17 +20,23 @@ const AdminMainPage = () => {
     const [sortAscending, setSortAscending] = useState(true);
     const boardId = 0;
 
+    const [reports, setReports] = useState([]);
+    const [reportsPage, setReportsPage] = useState(0);
+    const [reportsTotalPages, setReportsTotalPages] = useState(0);
+    const [reportsSize] = useState(4);
+    const [reportSortBy, setReportSortBy] = useState('UNVERIFIED'); // Default sorting by 'UNVERIFIED'
+
     const fetchNotices = useCallback(async () => {
         try {
             const response = await axiosInstance.get(`/api/admin/post/notice/page`, {
                 params: {
                     page: noticesPage,
                     size: noticesSize,
-                    asc: sortAscending
+                    asc: sortAscending,
                 },
-                headers: {Authorization: localStorage.getItem('Authorization')}
+                headers: { Authorization: localStorage.getItem('Authorization') },
             });
-            const {totalPages, responseDtoList} = response.data;
+            const { totalPages, responseDtoList } = response.data;
             setNotices(responseDtoList || []);
             setNoticesTotalPages(totalPages);
         } catch (error) {
@@ -42,8 +48,8 @@ const AdminMainPage = () => {
     const fetchHashtags = useCallback(async () => {
         try {
             const response = await axiosInstance.get('/api/admin/hashtag/page', {
-                params: {page: 0, size: hashtagsSize, sortBy: 'id',asc:false},
-                headers: {Authorization: `${localStorage.getItem('Authorization')}`}
+                params: { page: 0, size: hashtagsSize, sortBy: 'id', asc: false },
+                headers: { Authorization: `${localStorage.getItem('Authorization')}` },
             });
             const data = response.data;
             let hashtagsData = [];
@@ -64,24 +70,47 @@ const AdminMainPage = () => {
         }
     }, [hashtagsSize]);
 
+    // Fetch reports data
+    const fetchReports = useCallback(async () => {
+        try {
+            const response = await axiosInstance.get(`/api/report`, {
+                params: {
+                    page: reportsPage,
+                    size: reportsSize,
+                    sortBy: reportSortBy,
+                    asc: sortAscending,
+                },
+                headers: { Authorization: localStorage.getItem('Authorization') },
+            });
+            const { totalPages, responseDtoList } = response.data;
+            setReports(responseDtoList || []);
+            setReportsTotalPages(totalPages);
+        } catch (error) {
+            console.error('신고 조회 중 오류 발생:', error);
+            setReports([]);
+        }
+    }, [reportsPage, reportsSize, reportSortBy, sortAscending]);
+
     const create3DMap = (hashtags) => {
         const tiers = [];
         const tags = [];
         const counts = [];
 
-        hashtags.forEach(({tier, tag, count}) => {
+        hashtags.forEach(({ tier, tag, count }) => {
             tiers.push(tier);
             tags.push(tag);
             counts.push(count);
         });
 
-        return {tiers, tags, counts};
+        return { tiers, tags, counts };
     };
 
     const handleCrawlingAction = async (endpoint) => {
         try {
-            await axiosInstance.post(`/api/content${endpoint}`,
-                {}, {headers: {Authorization: `${localStorage.getItem('Authorization')}`}}
+            await axiosInstance.post(
+                `/api/content${endpoint}`,
+                {},
+                { headers: { Authorization: `${localStorage.getItem('Authorization')}` } }
             );
             alert('작업이 성공적으로 완료되었습니다.');
         } catch (error) {
@@ -106,6 +135,10 @@ const AdminMainPage = () => {
         fetchHashtags();
     }, [fetchHashtags]);
 
+    useEffect(() => {
+        fetchReports();
+    }, [fetchReports]);
+
     if (loading) {
         return <div>Loading...</div>;
     }
@@ -116,82 +149,62 @@ const AdminMainPage = () => {
                 <div className={styles['crawling-form']}>
                     <h2>크롤링 관리</h2>
                     <div className={styles['crawling-btn-container']}>
-                        <button onClick={() => handleCrawlingAction('/start/all')}
-                                className={styles['crawling-btn']}>전체 크롤링 시작
+                        <button
+                            onClick={() => handleCrawlingAction('/start/all')}
+                            className={styles['crawling-btn']}
+                        >
+                            전체 크롤링 시작
                         </button>
-                        <button onClick={() => handleCrawlingAction('/local')}
-                                className={styles['crawling-btn']}>로컬 파일로 저장
+                        <button
+                            onClick={() => handleCrawlingAction('/local')}
+                            className={styles['crawling-btn']}
+                        >
+                            로컬 파일로 저장
                         </button>
-                        <button onClick={() => handleCrawlingAction('/local/update')}
-                                className={styles['crawling-btn']}>로컬 파일로 DB 업데이트
+                        <button
+                            onClick={() => handleCrawlingAction('/local/update')}
+                            className={styles['crawling-btn']}
+                        >
+                            로컬 파일로 DB 업데이트
                         </button>
                     </div>
-                    <br/>
+                    <br />
                     <h2>관리</h2>
                     <div className={styles['management-btn-container']}>
-                        <button onClick={() => navigate('/admin/user')}
-                                className={styles['management-btn']}>유저 관리
+                        <button onClick={() => navigate('/admin/user')} className={styles['management-btn']}>
+                            유저 관리
                         </button>
-                        <button onClick={() => navigate('/admin/post')}
-                                className={styles['management-btn']}>게시글 관리
+                        <button onClick={() => navigate('/admin/post')} className={styles['management-btn']}>
+                            게시글 관리
                         </button>
-                        <button onClick={() => navigate('/admin/content')}
-                                className={styles['management-btn']}>컨텐츠 관리
+                        <button onClick={() => navigate('/admin/content')} className={styles['management-btn']}>
+                            컨텐츠 관리
                         </button>
-                        <button onClick={() => navigate('/admin/hashtag')}
-                                className={styles['management-btn']}>태그 관리
+                        <button onClick={() => navigate('/admin/hashtag')} className={styles['management-btn']}>
+                            태그 관리
                         </button>
-                        <button onClick={() => navigate('/admin/other')}
-                                className={styles['management-btn']}>기타 관리
+                        <button onClick={() => navigate('/admin/other')} className={styles['management-btn']}>
+                            기타 관리
                         </button>
                     </div>
-                </div>
-                <div className={styles['tags-form']}>
-                    <h2>해시태그 순위 탑 100</h2>
-                    <Plot
-                        data={[
-                            {
-                                x: map3D.tiers,
-                                y: map3D.tags,
-                                z: map3D.counts,
-                                mode: 'markers',
-                                marker: {
-                                    size: map3D.counts,
-                                    color: map3D.counts,
-                                    colorscale: 'Viridis',
-                                    opacity: 0.8,
-                                },
-                                type: 'scatter3d'
-                            },
-                        ]}
-                        layout={{
-                            width: 650,
-                            height: 500,
-                            margin: {
-                                l: 0,  // 왼쪽 마진
-                                r: 0,  // 오른쪽 마진
-                                t: 0,  // 상단 마진
-                                b: 0,  // 하단 마진
-                            },
-                        }}
-                    />
                 </div>
 
                 <div className={styles['login-form']}>
                     <h2>공지사항 관리</h2>
                     <div className={styles['crawling-btn-container']}>
-                        <button onClick={openModal}
-                                className={styles['crawling-btn']}>공지 쓰기
+                        <button onClick={openModal} className={styles['crawling-btn']}>
+                            공지 쓰기
                         </button>
                     </div>
                     <div>
                         <h3>
                             <button
-                            onClick={() => setSortAscending(prev => !prev)}
-                            className={styles.sort_btn}
-                        >
-                            {sortAscending ? '공지사항 목록 ▲' : '공지사항 목록 ▼'}
-                        </button></h3>
+                                onClick={() => setSortAscending((prev) => !prev)}
+                                className={styles.sort_btn}
+                            >
+                                {sortAscending ? '공지사항 목록 ▲' : '공지사항 목록 ▼'}
+                            </button>
+                        </h3>
 
                         <PostList
                             posts={notices}
@@ -203,10 +216,44 @@ const AdminMainPage = () => {
                     </div>
                 </div>
 
+                <div className={styles['login-form']}>
+                    <h2>신고 관리</h2>
+                    <div>
+                        <label htmlFor="report-sort">정렬 기준:</label>
+                        <select
+                            id="report-sort"
+                            value={reportSortBy}
+                            onChange={(e) => setReportSortBy(e.target.value)}
+                            className={styles.sort_select}
+                        >
+                            <option value="UNVERIFIED">미확인</option>
+                            <option value="VERIFIED">확인</option>
+                            <option value="COMPLETED">완료됨</option>
+                            <option value="PENDING">보류됨</option>
+                        </select>
+                    </div>
+                    <h3>
+                        <button
+                            onClick={() => setSortAscending((prev) => !prev)}
+                            className={styles.sort_btn}
+                        >
+                            {sortAscending ? '신고 목록 ▲' : '신고 목록 ▼'}
+                        </button>
+                    </h3>
+
+                    <PostList
+                        posts={reports}
+                        boardId={boardId}
+                        currentPage={reportsPage}
+                        totalPages={reportsTotalPages}
+                        onPageClick={(newPage) => setReportsPage(newPage)}
+                    />
+                </div>
+
                 {isModalOpen && (
                     <div className={styles.modalOverlay}>
                         <div className={styles.modalContent}>
-                            <NewNoticePage closeModal={closeModal}/>
+                            <NewNoticePage closeModal={closeModal} />
                         </div>
                     </div>
                 )}

@@ -5,7 +5,7 @@ import LikeBookmarkButtons from './LikeBookmarkButtons/LikeBookmarkButtons';
 import axiosInstance from '../../api/axiosInstance';
 import PostList from '../../tool/PostList/PostList';
 import styles from './ContentDetailPage.module.css';
-import Swiper from 'swiper';  // Swiper.js를 임포트
+import Swiper from 'swiper';
 
 const platformColors = {
     '리디': '#03beea',
@@ -19,6 +19,7 @@ const ContentDetailPage = ({ isLoggedIn }) => {
     const navigate = useNavigate();
     const [content, setContent] = useState(null);
     const [relatedPosts, setRelatedPosts] = useState([]);
+    const [contentPosts, setContentPosts] = useState([]); // 새로 추가된 상태
     const [page, setPage] = useState(1);
     const [totalPages, setTotalPages] = useState(1);
     const [currentUserId, setCurrentUserId] = useState(null);
@@ -31,8 +32,6 @@ const ContentDetailPage = ({ isLoggedIn }) => {
                     headers: { Authorization: `${localStorage.getItem('Authorization')}` }
                 });
                 setContent(response.data);
-                console.log(response.data)
-
                 setTotalPages(Math.ceil(response.data.posts.length / itemsPerPage));
                 await axiosInstance.post(`/api/contents/viewcount/${cardId}`);
             } catch (error) {
@@ -81,25 +80,42 @@ const ContentDetailPage = ({ isLoggedIn }) => {
         fetchRelatedPosts();
     }, [page]);
 
+    // 새롭게 추가된 content 관련 post들을 불러오는 useEffect
+    useEffect(() => {
+        const fetchContentPosts = async () => {
+            try {
+                const response = await axiosInstance.get(`api/post/content`, {
+                    params: {
+                        content: cardId,
+                        offset: 0,
+                        pagesize: itemsPerPage
+                    }
+                });
+                setContentPosts(response.data);
+            } catch (error) {
+                console.error('Error fetching content-related posts:', error);
+            }
+        };
+
+        fetchContentPosts();
+    }, [cardId]);
+
     useEffect(() => {
         const swiperContainer = document.querySelector('.swiper-container');
         if (swiperContainer) {
             const swiperInstance = new Swiper(swiperContainer, {
                 slidesPerView: 3,
                 slidesPerGroup: 3,
-                loop: true,  // 기본적으로 루프 모드 활성화
-                // 그 외 설정
+                loop: true,
             });
 
-            // 슬라이드 수와 설정된 값 비교
             const totalSlides = swiperInstance.slides.length;
             const slidesPerView = swiperInstance.params.slidesPerView;
             const slidesPerGroup = swiperInstance.params.slidesPerGroup;
 
-            // 슬라이드가 부족할 경우 루프 모드 비활성화
             if (totalSlides < slidesPerView || totalSlides < slidesPerGroup) {
-                swiperInstance.params.loop = false;  // 루프 모드 비활성화
-                swiperInstance.update();  // 설정 업데이트
+                swiperInstance.params.loop = false;
+                swiperInstance.update();
             }
         }
     }, []);
@@ -109,9 +125,8 @@ const ContentDetailPage = ({ isLoggedIn }) => {
     };
 
     const handleTagClick = (tag) => {
-        localStorage.setItem('selectedTag', tag);  // 선택된 태그를 로컬 스토리지에 저장
-        console.log(tag)
-        navigate('/');  // '/' 경로로 리다이렉트
+        localStorage.setItem('selectedTag', tag);
+        navigate('/');
     };
 
     if (!content) {
@@ -159,7 +174,7 @@ const ContentDetailPage = ({ isLoggedIn }) => {
                                     <button
                                         key={index}
                                         className={styles.tag_button}
-                                        onClick={() => handleTagClick(tag)}  // 태그 클릭 시 처리
+                                        onClick={() => handleTagClick(tag)}
                                     >
                                         {tag}
                                     </button>
@@ -172,7 +187,7 @@ const ContentDetailPage = ({ isLoggedIn }) => {
                                 <button
                                     key={tag}
                                     className={styles.tag_button}
-                                    onClick={() => handleTagClick(tag)}  // 태그 클릭 시 처리
+                                    onClick={() => handleTagClick(tag)}
                                 >
                                     {tag}
                                 </button>
@@ -182,20 +197,29 @@ const ContentDetailPage = ({ isLoggedIn }) => {
                             <p>{content.description}</p>
                         </div>
                     </div>
-                    <div className="commentSection">
-                        <CommentSection postId={cardId} isLoggedIn={isLoggedIn} currentUserId={currentUserId} />
-                    </div>
                 </div>
             </div>
 
             <div className={styles.review_container}>
                 <div className="community-header review_head">
-                    <a href={`/community/board/2`}><h2 className="review_head">리뷰 보드</h2></a>
+                    <a href={`/community/board/2`}><h2 className="review_head">리뷰 게시판</h2></a>
                 </div>
 
                 <PostList
                     posts={relatedPosts}
-                    boardId={2}  // 리뷰 보드 ID
+                    boardId={2}
+                    currentPostId={null}
+                    currentPage={page}
+                    totalPages={totalPages}
+                    onPageClick={handlePageClick}
+                />
+            </div>
+
+            <div className={styles.review_container}>
+                <h2>해당 콘텐츠 리뷰</h2>
+                <PostList
+                    posts={contentPosts}
+                    boardId={2}
                     currentPostId={null}
                     currentPage={page}
                     totalPages={totalPages}
