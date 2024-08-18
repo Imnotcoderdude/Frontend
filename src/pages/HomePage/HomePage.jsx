@@ -21,7 +21,7 @@ const HomePage = () => {
         <div className="content-page">
             <ContentPage
                 type="/genre"
-                title="인기 웹툰 웹소설"
+                title="인기 웹툰 및 웹소설"
                 genres={genres}
                 tabs={['리디', '카카오페이지', '문피아']}
             />
