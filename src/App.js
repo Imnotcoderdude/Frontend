@@ -165,6 +165,7 @@ const App = () => {
                        element={<BoardPage isLoggedIn={isLoggedIn}/>}/>
                 <Route path="/community/board/:boardId/post/:postId"
                        element={<PostDetailPage isLoggedIn={isLoggedIn}/>}/>
+                <Route path="/community/board/3/post/:postId" element={<ReportDetailPage isLoggedIn={isLoggedIn} isSpecialBoard />}/>
                 <Route path="/review/:contentId/new" element={<NewPostReviewPage/>}/>
                 <Route path="/community/board/:boardId/post/new" element={<NewPostPage/>}/>
 
@@ -175,7 +176,6 @@ const App = () => {
                 <Route path="/admin/post" element={<AdminRoute><AdminPostManagementPage/></AdminRoute>}/>
                 <Route path="/admin/hashtag" element={<AdminRoute><AdminHashtagManagementPage/></AdminRoute>}/>
                 <Route path="/admin/content" element={<AdminRoute><AdminContentManagementPage/></AdminRoute>}/>
-                <Route path="/admin/reports/:reportId" element={<ReportDetailPage />} />
 
                 <Route path="/payment/ready" component={PaymentReadyPage} />
                 <Route path="/payment/approve" component={PaymentApprovePage} />

@@ -75,10 +75,12 @@ const CommentSection = ({ postId, isLoggedIn, currentUserId }) => {
         };
 
         loadLastPage();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [postId, isLoggedIn]);
 
     useEffect(() => {
         fetchComments(currentPage - 1);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [currentPage]);
 
     // 댓글 작성 처리 함수
