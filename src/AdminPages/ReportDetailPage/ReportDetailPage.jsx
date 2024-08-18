@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import {useNavigate, useParams} from 'react-router-dom';
 import axiosInstance from '../../api/axiosInstance';
-// import styles from './ReportDetailPage.module.css';
+import styles from './ReportDetailPage.module.css';
 
 const ReportDetailPage = ({ isLoggedIn, isSpecialBoard }) => {
     const { postId } = useParams();
