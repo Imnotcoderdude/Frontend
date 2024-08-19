@@ -109,19 +109,19 @@ const AdminMainPage = () => {
                         </button>
                         <button
                             onClick={() => handleCrawlingAction('/start/r')}
-                            className={styles['crawling-btn R_crawling']}
+                            className={`${styles['crawling-btn']} ${styles['R_crawling']}`}
                         >
                             리디북스 크롤링 시작
                         </button>
                         <button
                             onClick={() => handleCrawlingAction('/start/m')}
-                            className={styles['crawling-btn M_crawling']}
+                            className={`${styles['crawling-btn']} ${styles['M_crawling']}`}
                         >
                             문피아 크롤링 시작
                         </button>
                         <button
                             onClick={() => handleCrawlingAction('/start/k')}
-                            className={styles['crawling-btn K_crawling']}
+                            className={`${styles['crawling-btn']} ${styles['K_crawling']}`}
                         >
                             카카오페이지 크롤링 시작
                         </button>
