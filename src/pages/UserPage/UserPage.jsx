@@ -12,7 +12,7 @@ const UserPage = () => {
     const [currentPage, setCurrentPage] = useState(1);
 
     const pageSize = 4;
-    const offset = (currentPage - 1) * pageSize;
+    const asc = false; // 오름차순 여부를 결정하는 변수 (필요에 따라 true로 변경 가능)
 
     const fetchUserData = useCallback(async () => {
         try {
@@ -26,18 +26,23 @@ const UserPage = () => {
     const fetchRecentPosts = useCallback(async () => {
         try {
             const postsResponse = await axiosInstance.get(`/api/user/${userId}/posts`, {
-                params: { offset, pageSize },
+                params: {
+                    page: currentPage - 1, // 0부터 시작하는 페이지 인덱스
+                    pagesize: pageSize,
+                    asc: asc
+                },
                 headers: { Authorization: `${localStorage.getItem('Authorization')}` }
             });
 
-            setRecentPosts(Array.isArray(postsResponse.data.posts) ? postsResponse.data.posts : []);
+            // 응답 데이터 구조에 맞게 수정
+            setRecentPosts(Array.isArray(postsResponse.data.responseDtoList) ? postsResponse.data.responseDtoList : []);
             setTotalPages(postsResponse.data.totalPages);
 
         } catch (error) {
             console.error('Failed to fetch recent posts:', error);
             setRecentPosts([]);
         }
-    }, [userId,offset, pageSize]);
+    }, [userId, currentPage, pageSize, asc]);
 
     useEffect(() => {
         fetchUserData();
