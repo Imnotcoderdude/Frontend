@@ -25,7 +25,7 @@ const UserPage = () => {
 
     const fetchRecentPosts = useCallback(async () => {
         try {
-            const postsResponse = await axiosInstance.get(`/api/user/posts/${userId}`, {
+            const postsResponse = await axiosInstance.get(`/api/user/${userId}/posts`, {
                 params: { offset, pageSize },
                 headers: { Authorization: `${localStorage.getItem('Authorization')}` }
             });

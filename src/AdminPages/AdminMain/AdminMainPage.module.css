@@ -128,6 +128,36 @@
     background-color: #0056b3;
 }
 
+.K_crawling{
+    background-color: #fae100;
+
+}
+
+.K_crawling:hover{
+    background-color: #796e00;
+
+}
+
+
+.M_crawling{
+    background-color: #0054a8;
+
+}
+
+.M_crawling:hover{
+    background-color: #002245;
+
+}
+
+.R_crawling{
+    background-color: #4b91db;
+
+}
+
+.R_crawling:hover{
+    background-color: #234263;
+
+}
 /* 추가된 모달 스타일 */
 .modalOverlay {
     position: fixed;

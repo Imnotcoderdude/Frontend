@@ -108,19 +108,25 @@ const AdminMainPage = () => {
                             전체 크롤링 시작
                         </button>
                         <button
-                            onClick={() => handleCrawlingAction('/local')}
-                            className={styles['crawling-btn']}
+                            onClick={() => handleCrawlingAction('/start/r')}
+                            className={styles['crawling-btn R_crawling']}
                         >
-                            로컬 파일로 저장
+                            리디북스 크롤링 시작
                         </button>
                         <button
-                            onClick={() => handleCrawlingAction('/local/update')}
-                            className={styles['crawling-btn']}
+                            onClick={() => handleCrawlingAction('/start/m')}
+                            className={styles['crawling-btn M_crawling']}
                         >
-                            로컬 파일로 DB 업데이트
+                            문피아 크롤링 시작
+                        </button>
+                        <button
+                            onClick={() => handleCrawlingAction('/start/k')}
+                            className={styles['crawling-btn K_crawling']}
+                        >
+                            카카오페이지 크롤링 시작
                         </button>
                     </div>
-                    <br />
+                    <br/>
                     <h2>관리</h2>
                     <div className={styles['management-btn-container']}>
                         <button onClick={() => navigate('/admin/user')} className={styles['management-btn']}>
