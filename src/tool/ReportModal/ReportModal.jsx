@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import PropTypes from 'prop-types';
 import axiosInstance from '../../api/axiosInstance';
-import './ReportModal.css';
+import '../TagSearch/TagSearch.css';
 
 const ReportModal = ({ postId, commentId, onClose, isVisible }) => {
     const [reportTitle, setReportTitle] = useState('');
@@ -31,23 +31,34 @@ const ReportModal = ({ postId, commentId, onClose, isVisible }) => {
     if (!isVisible) return null;
 
     return (
-        <div className="modal">
-            <div className="modal-content">
-                <h3>게시글 신고</h3>
-                <input
-                    type="text"
-                    placeholder="신고 제목"
-                    value={reportTitle}
-                    onChange={(e) => setReportTitle(e.target.value)}
-                />
-                <textarea
-                    placeholder="신고 내용"
-                    value={reportContent}
-                    onChange={(e) => setReportContent(e.target.value)}
-                />
-                <div className="modal-actions">
-                    <button onClick={handleReport}>신고 접수</button>
-                    <button onClick={onClose}>취소</button>
+        <div className="modal-overlay" onClick={onClose}>
+            <div className="modal" onClick={(e) => e.stopPropagation()}>
+                <button className="close-modal-button" onClick={onClose}>
+                    닫기
+                </button>
+                <div className="modal-content">
+                    <h3>게시글 신고</h3>
+                    <input
+                        type="text"
+                        placeholder="신고 제목"
+                        value={reportTitle}
+                        onChange={(e) => setReportTitle(e.target.value)}
+                        className="search-input"
+                    />
+                    <textarea
+                        placeholder="신고 내용"
+                        value={reportContent}
+                        onChange={(e) => setReportContent(e.target.value)}
+                        className="search-input"
+                    />
+                    <div className="modal-actions">
+                        <button onClick={handleReport} className="search-button">
+                            신고 접수
+                        </button>
+                        <button onClick={onClose} className="tag-button">
+                            취소
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>

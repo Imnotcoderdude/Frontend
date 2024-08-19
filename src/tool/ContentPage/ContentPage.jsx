@@ -1,9 +1,9 @@
-import React, {useCallback, useEffect, useRef, useState} from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import Card from "../../tool/Card/Card";
 import axiosInstance from "../../api/axiosInstance";
 import './ContentPage.css';
 
-const ContentPage = ({type, title, genres, tabs}) => {
+const ContentPage = ({ type, title, genres, tabs }) => {
     const [contents, setContents] = useState([]);
     const [offset, setOffset] = useState(0);
     const [pageSize] = useState(10);
@@ -23,10 +23,37 @@ const ContentPage = ({type, title, genres, tabs}) => {
     const scrollLeft = useRef(0);
 
     const endOptions = [
-        {name: '전체', value: ''},  // 전체 옵션 추가
-        {name: '완결', value: 'END'},
-        {name: '연재중', value: 'NOT'}
+        { name: '전체', value: '' },  // 전체 옵션 추가
+        { name: '완결', value: 'END' },
+        { name: '연재중', value: 'NOT' }
     ];
+
+    const fetchContent = async (offset, pageSize, subGenre, tab, end) => {
+        if (loading) return;
+        setLoading(true);
+        try {
+            const selectedTag = localStorage.getItem('selectedTag');
+            const genre = selectedTag || subGenre;
+
+            const response = await axiosInstance.get(`/api/contents${type}`, {
+                headers: { Authorization: `${localStorage.getItem('Authorization')}` },
+                params: { offset, pagesize: pageSize, genre: genre || '', platform: tab || '', end: end || '' }
+            });
+            const content = response.data.map(content => ({
+                ...content,
+            }));
+            if (offset === 0) {
+                setContents(content);
+            } else {
+                setContents(prevContents => [...prevContents, ...content]);
+            }
+            setHasMore(content.length > 0);
+        } catch (error) {
+            console.error("컨텐츠를 불러오는 중 오류가 발생했습니다!", error);
+        } finally {
+            setLoading(false);
+        }
+    };
 
     useEffect(() => {
         if (offset === 0) {
@@ -38,28 +65,9 @@ const ContentPage = ({type, title, genres, tabs}) => {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [offset, pageSize, selectedSubGenre, selectedTab, selectedEndOption]);
 
-    const fetchContent = async (offset, pageSize, subGenre, tab, end) => {
-        if (loading) return;
-        setLoading(true);
-        try {
-            const selectedTag = localStorage.getItem('selectedTag');
-            const genre = selectedTag || subGenre;
-
-            const response = await axiosInstance.get(`/api/contents${type}`, {
-                headers: {Authorization: `${localStorage.getItem('Authorization')}`},
-                params: {offset, pagesize: pageSize, genre: genre || '', platform: tab || '', end: end || ''}
-            });
-            const content = response.data.map(content => ({
-                ...content,
-            }));
-            setContents(prevContents => [...prevContents, ...content]);
-            setHasMore(content.length > 0);
-        } catch (error) {
-            console.error("컨텐츠를 불러오는 중 오류가 발생했습니다!", error);
-        } finally {
-            setLoading(false);
-        }
-    };
+    useEffect(() => {
+        setOffset(0);
+    }, [selectedGenre, selectedSubGenre, selectedTab, selectedEndOption]);
 
     const handleScroll = useCallback(() => {
         if (window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 1 && hasMore && !loading) {
@@ -172,7 +180,7 @@ const ContentPage = ({type, title, genres, tabs}) => {
 
                         {selectedGenre === genre.name && (filteredSubGenres.length > 0 || searchTerm) && (
                             <div
-                                style={{transform: `translateX(-${leftPosition - 10}px)`}}
+                                style={{ transform: `translateX(-${leftPosition - 10}px)` }}
                                 className="subgenre-filter"
                                 ref={subgenreRef}
                                 onMouseDown={handleMouseDown}
