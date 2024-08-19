@@ -1,0 +1,84 @@
+body, html {
+    margin: 0;
+    padding: 0;
+    font-family: 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    background-color: #f0f2f5;
+    color: #333;
+}
+
+.container {
+    max-width: 800px;
+    margin: 2rem auto;
+    padding: 2rem;
+    background-color: #fff;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+
+.formGroup {
+    margin-bottom: 1.5rem;
+
+}
+
+.formGroup_bottom {
+    text-align: right;
+    margin-bottom: 1.5rem;
+
+}
+
+label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-weight: 500;
+}
+
+input[type="text"],
+textarea {
+    width: 100%;
+    padding: 0.75rem;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    font-size: 1rem;
+}
+
+textarea {
+    min-height: 200px;
+    resize: vertical;
+}
+
+.button_post {
+    text-align: right;
+    padding: 0.75rem 1.5rem;
+    background-color: #4285f4;
+    color: #fff;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 1rem;
+    margin-right: 1rem;
+    margin-top: 3rem;
+}
+
+.button_post:hover {
+    background-color: #357ae8;
+}
+
+.buttonSecondary {
+    background-color: #f1f3f4;
+    color: #333;
+}
+
+.buttonSecondary:hover {
+    background-color: #e2e6ea;
+}
+
+.quillEditor {
+    height: 300px;
+}
+.form-group {
+    margin-bottom: 1.5rem;
+    display: flex;
+    justify-content: flex-end; /* 우측 정렬 */
+    gap: 10px; /* 버튼 간격 조정 */
+}
