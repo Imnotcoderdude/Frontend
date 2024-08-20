@@ -63,7 +63,7 @@ const AdminLoginPage = ({onAdminLogin}) => {
                 </div>
             </main>
             <footer className={styles.footer}>
-                <p>&copy; 2023 11조 프로젝트. All rights reserved.</p>
+                <p>&copy; 2024 11조 프로젝트. All rights reserved.</p>
             </footer>
         </div>
     );

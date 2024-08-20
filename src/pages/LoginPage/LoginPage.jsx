@@ -24,7 +24,7 @@ const LoginPage = () => {
                 </div>
             </main>
             <footer className="footer">
-                <p>&copy; 2023 11조 프로젝트. All rights reserved.</p>
+                <p>&copy; 2024 11조 프로젝트. All rights reserved.</p>
             </footer>
         </div>
     );

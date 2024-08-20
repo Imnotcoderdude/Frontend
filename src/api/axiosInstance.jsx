@@ -49,7 +49,7 @@ axiosInstance.interceptors.response.use(
                         originalRequest.headers['Authorization'] = `${accessToken}`;
                         return axiosInstance(originalRequest);
                     } catch (refreshError) {
-                        alert("세션이 만료되었습니다. 다시 로그인해 주세요.");
+                        alert("토큰이 만료되었습니다. 다시 로그인해 주세요.");
                         console.error('토큰 갱신 실패:', refreshError);
                         localStorage.removeItem('Authorization');
                         localStorage.removeItem('RefreshToken');
